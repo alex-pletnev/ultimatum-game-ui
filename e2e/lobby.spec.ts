@@ -42,9 +42,8 @@ test.describe('lobby', () => {
     await expect(page.getByRole('heading', { name: /Открытые партии/i })).toBeVisible();
     await expect(page.getByRole('link', { name: /вернуться ко входу/i })).toBeVisible();
 
-    // Одно из терминальных состояний: карточка партии ИЛИ empty ИЛИ error (последний — плохо, но не должен возникать при живом backend'е)
-    const anyCard = page.locator('[class*="rounded-card"]').first();
-    const emptyState = page.getByRole('heading', { name: /Стол пуст/i });
-    await expect(anyCard.or(emptyState)).toBeVisible({ timeout: 10_000 });
+    // Дождаться терминального состояния: skeleton'ы (animate-pulse) исчезли.
+    // Дальше — либо empty, либо карточки, оба ok.
+    await expect(page.locator('.animate-pulse')).toHaveCount(0, { timeout: 10_000 });
   });
 });

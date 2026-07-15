@@ -28,7 +28,8 @@ src/components/
 | `WaxSeal` | `src/components/WaxSeal.tsx` | Восковая печать с монограммой — SVG (radial-gradient + noise-filter). Основной акцент титульных экранов, декоративный разделитель | `size?` (default 88), `monogram?` (default `"U"`), `className?` |
 | `InkField` | `src/components/InkField.tsx` | «Чернильная запись» — поле ввода на пергаменте с brass-подчёркиванием, italic body-шрифт, ember-каретка. Поддерживает `hint` и `error`, ARIA-атрибуты корректны | `label`, `hint?`, `error?` + все `<input>`-атрибуты |
 | `RoleChoice` | `src/components/RoleChoice.tsx` | Radio-toggle «выбор персонажа» — 2 карточки с восковой печатью, ember-акцент на выбранной | `value: AssignableRole`, `onChange`, `name?` |
-| `SessionCard` | `src/components/SessionCard.tsx` | «Афиша партии» в лобби — пергамент с монограммой ведущего, displayName, тип (FFA / Team battle), 3-колоночный устав (мест / раундов / ставка). CTA «Заявиться» пока disabled до T-008 (join flow) | `session: SessionResponse` |
+| `SessionCard` | `src/components/SessionCard.tsx` | «Афиша партии» в лобби — пергамент с монограммой ведущего, displayName, тип (FFA / Team battle), 3-колоночный устав (мест / раундов / ставка). CTA «Заявиться» пока disabled до T-009 (join flow) | `session: SessionResponse` |
+| `NumberStepper` | `src/components/NumberStepper.tsx` | Управляемый number-stepper с − / +, aria-spinbutton. Не HTML `<input type="number">` — на mobile safari он поднимает нативную клавиатуру и портит стилистику. Ember hover на кнопках | `label`, `value`, `onChange`, `min`, `max`, `step?`, `hint?` |
 
 ## Design tokens
 

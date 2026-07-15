@@ -13,6 +13,26 @@ function jsonResponse(status: number, body: unknown): Response {
   });
 }
 
+const USER_PLAYER = {
+  id: 'u-me',
+  nickname: 'me',
+  role: 'PLAYER' as const,
+  createdAt: '2026-07-15T08:00:00.000+00:00',
+};
+
+/**
+ * Роутит mocked fetch по url-substring: любой запрос к /user отдаёт стандартного PLAYER'а,
+ * запрос к /session — то, что передано вторым параметром.
+ */
+function mockFetchWithSessions(sessionsResponse: Response) {
+  vi.mocked(fetch).mockImplementation((input: RequestInfo | URL) => {
+    const url = typeof input === 'string' ? input : input.toString();
+    if (url.includes('/user')) return Promise.resolve(jsonResponse(200, USER_PLAYER));
+    if (url.includes('/session')) return Promise.resolve(sessionsResponse.clone());
+    return Promise.resolve(jsonResponse(404, { message: 'not mocked' }));
+  });
+}
+
 function renderLobby() {
   const qc = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -67,7 +87,7 @@ describe('Lobby', () => {
   });
 
   it('shows empty state when backend returns 0 sessions', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(
+    mockFetchWithSessions(
       jsonResponse(200, { content: [], totalElements: 0, totalPages: 0, number: 0, size: 30 }),
     );
     renderLobby();
@@ -77,7 +97,7 @@ describe('Lobby', () => {
   });
 
   it('renders session cards when backend returns data', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(
+    mockFetchWithSessions(
       jsonResponse(200, {
         content: [sampleSession(), sampleSession({ id: 'sess-2', displayName: 'Совет старейшин' })],
         totalElements: 2,
@@ -92,13 +112,12 @@ describe('Lobby', () => {
       expect(screen.getByText('Круг наивных')).toBeInTheDocument(),
     );
     expect(screen.getByText('Совет старейшин')).toBeInTheDocument();
-    // Ведущий и параметры отображаются
     expect(screen.getAllByText(/ведущий · Merlin/i)).toHaveLength(2);
     expect(screen.getAllByText('2/4')).toHaveLength(2);
   });
 
   it('shows error state with retry button when request fails', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(
+    mockFetchWithSessions(
       jsonResponse(500, {
         timestamp: '',
         status: 500,
@@ -112,5 +131,31 @@ describe('Lobby', () => {
       expect(screen.getByRole('heading', { name: /Стол не отвечает/i })).toBeInTheDocument(),
     );
     expect(screen.getByRole('button', { name: /Постучать снова/i })).toBeInTheDocument();
+  });
+
+  it('shows "Учредить партию" CTA for ADMIN', async () => {
+    const adminUser = { ...USER_PLAYER, role: 'ADMIN' as const };
+    vi.mocked(fetch).mockImplementation((input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url.includes('/user')) return Promise.resolve(jsonResponse(200, adminUser));
+      return Promise.resolve(
+        jsonResponse(200, { content: [], totalElements: 0, totalPages: 0, number: 0, size: 30 }),
+      );
+    });
+    renderLobby();
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: /Учредить партию/i })).toBeInTheDocument(),
+    );
+  });
+
+  it('hides "Учредить партию" CTA for PLAYER', async () => {
+    mockFetchWithSessions(
+      jsonResponse(200, { content: [], totalElements: 0, totalPages: 0, number: 0, size: 30 }),
+    );
+    renderLobby();
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: /Стол пуст/i })).toBeInTheDocument(),
+    );
+    expect(screen.queryByRole('link', { name: /Учредить партию/i })).toBeNull();
   });
 });

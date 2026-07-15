@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Route, Routes } from 'react-router';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { App } from './App';
+import { CreateSession } from './routes/CreateSession';
 import { Lobby } from './routes/Lobby';
 import { Register } from './routes/Register';
 import { StyleGuide } from './routes/StyleGuide';
@@ -24,6 +25,7 @@ createRoot(rootElement).render(
             <Route path="/" element={<App />} />
             <Route path="/register" element={<Register />} />
             <Route path="/lobby" element={<Lobby />} />
+            <Route path="/lobby/new" element={<CreateSession />} />
             <Route path="/_style-guide" element={<StyleGuide />} />
           </Routes>
         </BrowserRouter>

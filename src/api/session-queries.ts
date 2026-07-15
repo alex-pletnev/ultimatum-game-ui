@@ -1,7 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from './client';
 import { useAccessToken } from './auth-storage';
-import type { Page, SessionResponse } from './types';
+import type { CreateSessionRequest, Page, SessionResponse } from './types';
 
 export const sessionKeys = {
   all: ['session'] as const,
@@ -23,5 +23,17 @@ export function useOpenSessions() {
     enabled: token !== null,
     // Лобби живое — обновляем чаще обычного.
     staleTime: 10_000,
+  });
+}
+
+/** Учреждение партии — только для ADMIN. Backend возвращает SessionWithTeamsAndMembersResponse. */
+export function useCreateSession() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: CreateSessionRequest) =>
+      apiFetch<SessionResponse>('/session', { method: 'POST', body }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: sessionKeys.openLobby });
+    },
   });
 }

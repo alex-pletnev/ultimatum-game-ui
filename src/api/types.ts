@@ -54,6 +54,23 @@ export type UserIdResponse = {
   id: string;
 };
 
+/* ────────────────────  Session — request DTO  ────────────────────────────── */
+
+export type SessionConfigRequest = {
+  sessionType: SessionType;
+  numRounds: number;
+  numTeams: number;
+  numPlayers: number;
+  roundSum: number;
+  timeoutMoveSec: number;
+};
+
+export type CreateSessionRequest = {
+  displayName: string;
+  openToConnect?: boolean;
+  config: SessionConfigRequest;
+};
+
 /* ────────────────────  Session (read-only минимум для лобби)  ────────────── */
 
 export type SessionConfigResponse = {
