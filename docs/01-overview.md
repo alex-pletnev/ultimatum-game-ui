@@ -4,7 +4,9 @@
 
 Веб-фронтенд к игре **Ultimatum Game** — экспериментальной поведенческой игре про переговоры / предложения / принятие-отклонение (см. upstream: <https://github.com/alex-pletnev/ultimatum-game>).
 
-Backend (Python) уже существует; наша задача — **клиентская сторона**: игрок(и) сидят перед экраном/-ами и играют. Проектируется как **иммерсивная цифровая настолка**, а не типовое веб-приложение.
+Backend (**Kotlin 1.9 + Spring Boot 3.4 + PostgreSQL**, REST + STOMP-over-WebSocket, JWT-auth) уже существует; наша задача — **клиентская сторона**: игроки со своих устройств подключаются к общей сессии и играют (мультиплеер, не hot-seat). Проектируется как **иммерсивная цифровая настолка**, а не типовое веб-приложение.
+
+Полный контракт backend'а — [`docs/05-api.md`](05-api.md), типы — [`docs/07-types.md`](07-types.md).
 
 ## 2. Стек (планируемый)
 
@@ -20,7 +22,7 @@ _(Стека физически ещё нет — код появится в T-0
 | Анимации | Framer Motion | Physicality: карты вращаются, фишки «падают» |
 | Data-fetch | TanStack Query | REST-запросы к backend'у |
 | Local state | Zustand | UI-стейт, лёгкие сторы |
-| Realtime | WebSocket (нативный / `ws`) | Уточнить из frontend-integration/ (T-001) |
+| Realtime | **`@stomp/stompjs`** | Backend отдаёт **STOMP 1.2 поверх WebSocket** (не голый WS). Обязателен |
 | Routing | React Router | Экран лобби / экран игры / экран правил |
 | Package manager | pnpm | Быстрый, экономит диск |
 | Тесты | Vitest + @testing-library/react | Появятся с scaffolding'ом (T-002) |
@@ -40,16 +42,17 @@ _(Заполнить когда появится код — планово `src/
 
 ## 4. Ключевые концепции
 
-_(Черновой список от идеи «Ultimatum Game». Уточнится после чтения frontend-integration/ в T-001.)_
-
-| Термин | Смысл (в первом приближении) |
-|--------|----|
-| Room / Session | Игровая партия — контейнер участников |
-| Proposer | Игрок, делающий предложение о разделе |
-| Responder | Игрок, принимающий/отклоняющий предложение |
-| Offer | Сумма/пропорция, предложенная Proposer'ом |
-| Round | Один цикл «предложил → ответил» |
-| Pot | Общая ставка на кону в раунде |
+| Термин | Смысл |
+|--------|-------|
+| **Session** | Игровая партия. Состояния: `CREATED → RUNNING → FINISHED`. Создаётся ADMIN'ом, содержит config, участников, историю раундов |
+| **SessionType** | `FREE_FOR_ALL` (все против всех) или `TEAM_BATTLE` (2..5 команд, оффер идёт в чужую команду) |
+| **Round** | Один цикл раздачи. `numRounds ∈ [1, 10]` per session. Фазы: `CREATED → WAIT_OFFERS → ALL_OFFERS_RECEIVED → OFFERS_SENT → ALL_DECISIONS_RECEIVED → FINISHED` (или `ABORTED` через admin) |
+| **Proposer / Responder** | Каждый игрок в раунде **и то, и другое одновременно**: отправляет свой оффер (proposer) и получает чужой после shuffle (responder). Пары меняются каждый раунд |
+| **Offer** | Предложение о разделе `roundSum` — сумма `amount ∈ [0, roundSum]`, отправляется в фазе `WAIT_OFFERS` |
+| **Decision** | Ответ на полученный оффер: `accept=true` или `reject=false`, отправляется в фазе `OFFERS_SENT` |
+| **roundSum** | Общая ставка раунда (`10..100000`). Accept → proposer получает `roundSum - amount`, responder — `amount`. Reject → оба `0` |
+| **Роли (JWT)** | `ADMIN` (создаёт/управляет сессиями), `PLAYER` (участвует), `OBSERVER` (только смотрит), `NPC` (зарезервировано, не реализовано) |
+| **STOMP** | Framing-protocol поверх WebSocket. `/topic/...` — broadcast, `/user/queue/...` — персональные, `/app/...` — SEND-команды |
 
 ## 5. Как запустить локально
 

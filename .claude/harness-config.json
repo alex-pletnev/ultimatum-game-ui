@@ -5,7 +5,7 @@
   "BUILD_COMMAND": "pnpm build",
   "TEST_COMMAND": "pnpm test",
   "LANGUAGE": "RU",
-  "PROJECT_CONTEXT": "Frontend-only SPA для ultimatum-game backend (Python/FastAPI, docs в frontend-integration/). Solo/personal, вайб-кодинг, пользователь не фронтендер. Стиль — фирменный Claude Code, переосмысленный как настольная игра (иммерсивный UI, «попадаешь внутрь настолки», не типовой сайт). MVP-ориентированный.",
+  "PROJECT_CONTEXT": "Frontend-only SPA для ultimatum-game backend (Kotlin 1.9 + Spring Boot 3.4 + PostgreSQL, REST + STOMP-over-WebSocket, JWT-auth). Solo/personal, вайб-кодинг, пользователь не фронтендер. Стиль — фирменный Claude Code, переосмысленный как настольная игра (иммерсивный UI, «попадаешь внутрь настолки», не типовой сайт). MVP-ориентированный.",
   "PROFILE": "frontend-spa",
   "SETUP_DATE": "2026-07-15",
   "AXES_TRIGGERED": ["Speed-first", "Solo-mode", "Exploration-first", "Stylistic-directive"]

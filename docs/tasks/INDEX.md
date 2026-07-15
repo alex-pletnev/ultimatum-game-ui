@@ -8,7 +8,6 @@
 
 | ID | Название | Статус | Приоритет | Обновлено | Файл |
 |----|----------|--------|-----------|-----------|------|
-| T-001 | Изучить frontend-integration/, заполнить API-контракт | pending | high | 2026-07-15 | [T-001-fetch-and-document-api.md](T-001-fetch-and-document-api.md) |
 | T-002 | Vite+React+TS scaffolding, Tailwind, tooling | pending | high | 2026-07-15 | [T-002-scaffold-vite-react-tailwind.md](T-002-scaffold-vite-react-tailwind.md) |
 | T-003 | Design tokens: палитра/типографика Claude-brand | pending | medium | 2026-07-15 | [T-003-design-tokens-claude-brand.md](T-003-design-tokens-claude-brand.md) |
 
@@ -16,7 +15,7 @@
 
 | ID | Название | Статус | Закрыто | Файл |
 |----|----------|--------|---------|------|
-| _(пока пусто)_ | | | | |
+| T-001 | Изучить frontend-integration/, заполнить API-контракт | done | 2026-07-15 | [T-001-fetch-and-document-api.md](T-001-fetch-and-document-api.md) |
 
 ## Легенда статусов
 

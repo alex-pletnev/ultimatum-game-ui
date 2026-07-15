@@ -25,8 +25,9 @@ tags: [scaffolding, setup, tooling]
 - [ ] TailwindCSS настроен, `tailwind.config.ts` под кастомные tokens (пока minimal).
 - [ ] ESLint + Prettier — базовые конфиги, не спорящие между собой.
 - [ ] Vitest + @testing-library/react — один smoke-тест проходит.
-- [ ] `.gitignore` покрывает `node_modules/`, `dist/`, `.env.local`, `.vite/`, `coverage/`, IDE-фолдеры, OS-мусор.
-- [ ] `README.md` в корне: одна фраза о проекте + команды запуска.
+- [ ] `@stomp/stompjs` установлен (backend отдаёт STOMP-over-WebSocket, не голый WS — см. T-001).
+- [ ] `.env.example` с ключами `VITE_API_BASE_URL` (`http://localhost:8080/api/v1`) и `VITE_WS_URL` (`ws://localhost:8080/api/v1/ws`).
+- [ ] Решение о кодогенерации типов из OpenAPI (`openapi-typescript` из `docs/05-api.md`) — да/нет + обоснование в task-лог.
 - [ ] `pnpm dev` показывает пустой экран без ошибок в console.
 - [ ] `pnpm build` собирается без warnings/errors.
 
@@ -37,10 +38,12 @@ tags: [scaffolding, setup, tooling]
 3. Установить ESLint (`eslint-config-standard-with-typescript` или flat-config эквивалент), Prettier, интеграция.
 4. Установить Vitest + testing-library, добавить smoke-тест (`src/App.test.tsx`).
 5. Настроить `tsconfig.json` (strict + noUncheckedIndexedAccess).
-6. Создать `.gitignore`, `.editorconfig`, `.prettierrc`.
-7. Написать корневой `README.md` (короткий).
-8. Проверить все команды из AC.
-9. Через `/task-done` — commit + push.
+6. Установить `@stomp/stompjs` (deps) и `@tanstack/react-query`, `zustand`, `react-router-dom`, `framer-motion` (см. `docs/01-overview.md`).
+7. Создать `.editorconfig`, `.prettierrc` (`.gitignore` уже есть).
+8. `.env.example` с dev-URL backend'а.
+9. Написать корневой `README.md` (короткий).
+10. Проверить все команды из AC.
+11. Через `/task-done` — commit + push.
 
 ## Лог
 
