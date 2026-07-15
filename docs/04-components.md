@@ -26,6 +26,8 @@ src/components/
 |-----|------|------------|--------|
 | `Parchment` | `src/components/Parchment.tsx` | Базовая «карта / свиток» — тёплый бежевый фон, edge-vignette, brass-рамка, глубокая тень «лист под свечой». Обёртка для содержимого игровых карт | `children`, `className?` |
 | `WaxSeal` | `src/components/WaxSeal.tsx` | Восковая печать с монограммой — SVG (radial-gradient + noise-filter). Основной акцент титульных экранов, декоративный разделитель | `size?` (default 88), `monogram?` (default `"U"`), `className?` |
+| `InkField` | `src/components/InkField.tsx` | «Чернильная запись» — поле ввода на пергаменте с brass-подчёркиванием, italic body-шрифт, ember-каретка. Поддерживает `hint` и `error`, ARIA-атрибуты корректны | `label`, `hint?`, `error?` + все `<input>`-атрибуты |
+| `RoleChoice` | `src/components/RoleChoice.tsx` | Radio-toggle «выбор персонажа» — 2 карточки с восковой печатью, ember-акцент на выбранной | `value: AssignableRole`, `onChange`, `name?` |
 
 ## Design tokens
 
