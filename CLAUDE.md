@@ -137,6 +137,7 @@ Skills вызываются автоматически в перечисленн
 | После task-done, если с прошлой consolidation закрылось ≥10 задач | `consolidate` в Auto-mode | Одной строкой предложить пользователю запустить `/consolidate`; не запускать без confirm'а |
 | Баг / упавший тест / неожиданное поведение | `superpowers:systematic-debugging` | Не пытаться сразу фиксить — гипотеза → эксперимент → вывод. Особенно важно если проблема сопротивляется дольше ~10 минут |
 | Новая фича с ясным acceptance criteria | `superpowers:test-driven-development` | **RED→GREEN обязателен.** До реализации — написать провальные тесты по каждому AC и **прогнать их, увидеть FAIL** (сохранить в лог или ответе). Только потом — реализация до зелёного. Писать тесты «одним заходом» с impl'ом — считается нарушением: если impl и тест кривы согласованно, ошибка не будет замечена. Отсекает «сделал и не проверил» |
+| UI-изменение задеплоено (правки в `src/App.tsx` / `src/routes/**` / `src/components/**`) | без skill | `pnpm test:e2e` — Playwright headless. При провале — читать screenshot из `test-results/**/test-failed-1.png` через Read tool, увидеть визуальное состояние, править. Заменяет ручную проверку пользователя. Если backend не поднят — тесты корректно падают с явной ошибкой (см. `e2e/utils.ts → ensureBackendUp`) |
 | Многошаговый plan есть (`docs/superpowers/plans/*.md`) — начинаем прогон | `superpowers:executing-plans` | Дисциплинированный прогон с checkpoint'ами, а не «зачитал и побежал» |
 
 ## Проактивное заведение задач (Auto-mode для `task-add`)
@@ -233,9 +234,14 @@ Refs: docs/tasks/T-XXX-*.md
 ## Запуск и проверки
 
 - Сборка: `pnpm build`.
-- Тесты: `pnpm test`.
+- Тесты (unit + component, Vitest): `pnpm test`.
+- **E2E (Playwright + Chromium, требует backend на localhost:8080):** `pnpm test:e2e`.
 - Dev: `pnpm dev`.
-- Lint / type-check: `pnpm lint` / `pnpm typecheck` _(появятся вместе с scaffolding в T-002)_.
+- Lint / type-check: `pnpm lint` / `pnpm typecheck`.
+
+**E2E-feedback loop (важно для UI-задач):**
+
+После UI-изменений (правки в `src/App.tsx`, `src/routes/**`, `src/components/**`) — прогнать `pnpm test:e2e`. При провале Playwright сохраняет screenshot в `test-results/<test-name>/test-failed-1.png` — прочитать его через Read tool, увидеть визуальное состояние, поправить. Это заменяет «попроси пользователя посмотреть в браузере» — агент сам делает первую проверку.
 
 ## Долгие команды — эвристика ожидания
 
