@@ -1,11 +1,35 @@
+import { useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router';
 import { Parchment } from '../components/Parchment';
 import { WaxSeal } from '../components/WaxSeal';
 import { useAccessToken } from '../api/auth-storage';
 import { useCurrentUser } from '../api/auth-queries';
-import { useSessionDetails } from '../api/session-queries';
+import { useCurrentRound, useSessionDetails } from '../api/session-queries';
 import { useSessionLiveSync } from '../api/ws/useSessionLiveSync';
-import type { SessionWithTeamsAndMembersResponse, UserResponse } from '../api/types';
+import { useStompSend } from '../api/ws/useStompSend';
+import type {
+  RoundPhase,
+  SessionState,
+  SessionWithTeamsAndMembersResponse,
+  UserResponse,
+} from '../api/types';
+
+const sessionStateLabel: Record<SessionState, string> = {
+  CREATED: 'Ждём начала',
+  RUNNING: 'Партия идёт',
+  FINISHED: 'Партия окончена',
+  ABORTED: 'Партия прервана',
+};
+
+const roundPhaseLabel: Record<RoundPhase, string> = {
+  CREATED: 'Раунд подготовлен',
+  WAIT_OFFERS: 'Ждём предложений',
+  ALL_OFFERS_RECEIVED: 'Тасуем колоду',
+  OFFERS_SENT: 'Ждём решений',
+  ALL_DECISIONS_RECEIVED: 'Подсчёт очков',
+  FINISHED: 'Раунд окончен',
+  ABORTED: 'Раунд прерван',
+};
 
 function myRoleAtTable(
   session: SessionWithTeamsAndMembersResponse,
@@ -41,6 +65,11 @@ export function Session() {
   const { data: user } = useCurrentUser();
   const { data: session, isLoading, isError } = useSessionDetails(id);
   const { connected: liveConnected } = useSessionLiveSync(id);
+  const stompSend = useStompSend();
+  const [sendError, setSendError] = useState<string | null>(null);
+
+  const isRunning = session?.state === 'RUNNING';
+  const { data: round } = useCurrentRound(id, isRunning);
 
   if (token === null) return <Navigate to="/" replace />;
 
@@ -176,16 +205,76 @@ export function Session() {
         </Parchment>
       </div>
 
-      <Parchment className="mx-auto mt-10 max-w-xl text-center">
-        <div className="flex flex-col items-center gap-3">
-          <WaxSeal size={56} monogram="§" />
-          <h2 className="font-display text-lg uppercase tracking-[0.16em] text-ink-950">
-            Стол готов
-          </h2>
-          <p className="font-body italic text-ink-900/70">
-            Ожидаем других играющих — вот-вот начнём. Настоящая игровая механика
-            появится в следующих задачах (T-010+).
+      <Parchment className="mx-auto mt-10 max-w-2xl">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-brass-600">
+            {sessionStateLabel[session.state]}
           </p>
+
+          {session.state === 'RUNNING' && round !== undefined && (
+            <>
+              <h2 className="font-display text-2xl uppercase tracking-[0.16em] text-ink-950">
+                Раунд {round.roundNumber} / {session.config.numRounds}
+              </h2>
+              <span className="h-px w-16 bg-brass-500/60" />
+              <p className="font-body text-lg italic text-ink-900/80">
+                {roundPhaseLabel[round.roundPhase]}
+              </p>
+              {round.myRole !== 'NONE' && (
+                <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-brass-600">
+                  Твоя роль в раунде: {round.myRole === 'BOTH' ? 'proposer + responder' : round.myRole.toLowerCase()}
+                </p>
+              )}
+            </>
+          )}
+
+          {session.state === 'CREATED' && myRole === 'ведущий' && (
+            <>
+              <h2 className="font-display text-xl uppercase tracking-[0.16em] text-ink-950">
+                Стол готов
+              </h2>
+              <p className="font-body italic text-ink-900/70">
+                Как только все займут места — можно объявлять начало.
+              </p>
+              <button
+                type="button"
+                disabled={!liveConnected}
+                onClick={() => {
+                  try {
+                    setSendError(null);
+                    stompSend(`/app/session/${session.id}/start`);
+                  } catch (e) {
+                    setSendError(
+                      e instanceof Error ? e.message : 'Не удалось отправить команду',
+                    );
+                  }
+                }}
+                className="rounded-panel border border-ember-600/40 bg-ember-500 px-8 py-3 font-display text-sm uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50"
+                title={liveConnected ? '' : 'ждём подключение к живой ленте'}
+              >
+                Начать партию
+              </button>
+              {sendError !== null && (
+                <p role="alert" className="font-body text-sm italic text-blood-600">
+                  {sendError}
+                </p>
+              )}
+            </>
+          )}
+
+          {session.state === 'CREATED' && myRole !== 'ведущий' && (
+            <p className="font-body italic text-ink-900/70">
+              Ведущий вот-вот объявит начало партии.
+            </p>
+          )}
+
+          {(session.state === 'FINISHED' || session.state === 'ABORTED') && (
+            <p className="font-body italic text-ink-900/70">
+              {session.state === 'FINISHED'
+                ? 'Партия сыграна. Итоги — на табло очков (когда появится, T-014+).'
+                : 'Партию пришлось прервать раньше срока.'}
+            </p>
+          )}
         </div>
       </Parchment>
     </div>

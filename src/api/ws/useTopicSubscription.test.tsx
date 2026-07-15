@@ -54,7 +54,7 @@ describe('useTopicSubscription', () => {
     const onMessage = vi.fn();
 
     render(
-      <StompContext.Provider value={{ client }}>
+      <StompContext.Provider value={{ client, connected: true }}>
         <Harness destination="/topic/session/abc/sessionStatus" onMessage={onMessage} />
       </StompContext.Provider>,
     );
@@ -68,7 +68,7 @@ describe('useTopicSubscription', () => {
   it('does nothing when client is null', () => {
     const onMessage = vi.fn();
     render(
-      <StompContext.Provider value={{ client: null }}>
+      <StompContext.Provider value={{ client: null, connected: false }}>
         <Harness destination="/topic/session/abc/sessionStatus" onMessage={onMessage} />
       </StompContext.Provider>,
     );
@@ -79,7 +79,7 @@ describe('useTopicSubscription', () => {
     const { client } = makeMockClient(true);
     const onMessage = vi.fn();
     render(
-      <StompContext.Provider value={{ client }}>
+      <StompContext.Provider value={{ client, connected: true }}>
         <Harness destination={null} onMessage={onMessage} />
       </StompContext.Provider>,
     );
@@ -91,7 +91,7 @@ describe('useTopicSubscription', () => {
     const onMessage = vi.fn();
 
     render(
-      <StompContext.Provider value={{ client }}>
+      <StompContext.Provider value={{ client, connected: true }}>
         <Harness destination="/topic/x" onMessage={onMessage} />
       </StompContext.Provider>,
     );
@@ -105,7 +105,7 @@ describe('useTopicSubscription', () => {
     const onMessage = vi.fn();
 
     render(
-      <StompContext.Provider value={{ client }}>
+      <StompContext.Provider value={{ client, connected: true }}>
         <Harness destination="/topic/x" onMessage={onMessage} />
       </StompContext.Provider>,
     );
@@ -128,7 +128,7 @@ describe('useTopicSubscription', () => {
     const onMessage = vi.fn();
 
     const { unmount } = render(
-      <StompContext.Provider value={{ client }}>
+      <StompContext.Provider value={{ client, connected: true }}>
         <Harness destination="/topic/x" onMessage={onMessage} />
       </StompContext.Provider>,
     );

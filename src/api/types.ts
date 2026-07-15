@@ -121,6 +121,50 @@ export type SessionWithTeamsAndMembersResponse = Omit<SessionResponse, 'teams'> 
   observers: UserResponse[];
 };
 
+/* ────────────────────  Round + Offer + Decision  ─────────────────────────── */
+
+export type OfferPrewResponse = {
+  id: string;
+  offerValue: number;
+  proposer: UserResponse;
+  responder: UserResponse | null;
+  createdAt: string;
+};
+
+export type DecisionPrewResponse = {
+  id: string;
+  decision: boolean;
+  responder: UserResponse;
+  offer: OfferPrewResponse;
+  createdAt: string;
+};
+
+export type PendingAction = {
+  type: 'SEND_OFFER' | 'MAKE_DECISION';
+  offerId?: string;
+};
+
+/** Session-preview без team-раскрытия, вложен в RoundResponse. */
+export type SessionPrewResponse = {
+  id: string;
+  displayName: string;
+  state: SessionState;
+  createdAt: string;
+  admin: UserResponse;
+};
+
+export type RoundResponse = {
+  id: string;
+  roundNumber: number;
+  roundPhase: RoundPhase;
+  offers: OfferPrewResponse[];
+  decisions: DecisionPrewResponse[];
+  session: SessionPrewResponse;
+  /** Роль текущего user'а в раунде (backend вычисляет на REST-запросе; в WS-broadcast — NONE). */
+  myRole: MyRole;
+  myPendingActions: PendingAction[];
+};
+
 /** Spring Data Page — минимальный набор полей, которые фронту нужны. */
 export type Page<T> = {
   content: T[];

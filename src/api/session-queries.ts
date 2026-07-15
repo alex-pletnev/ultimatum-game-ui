@@ -4,6 +4,7 @@ import { useAccessToken } from './auth-storage';
 import type {
   CreateSessionRequest,
   Page,
+  RoundResponse,
   SessionResponse,
   SessionWithTeamsAndMembersResponse,
 } from './types';
@@ -12,6 +13,7 @@ export const sessionKeys = {
   all: ['session'] as const,
   openLobby: ['session', 'open-lobby'] as const,
   details: (id: string) => ['session', 'details', id] as const,
+  currentRound: (id: string) => ['session', 'current-round', id] as const,
 };
 
 /**
@@ -24,11 +26,12 @@ export function useOpenSessions() {
     queryKey: sessionKeys.openLobby,
     queryFn: () =>
       apiFetch<Page<SessionResponse>>(
-        '/session?openToConnect=true&state=CREATED&page=0&pageSize=30',
+        '/session?openToConnect=true&state=CREATED&page=0&pageSize=100',
       ),
     enabled: token !== null,
     // Лобби живое — обновляем чаще обычного.
     staleTime: 10_000,
+    refetchOnMount: 'always',
   });
 }
 
@@ -75,6 +78,23 @@ export function useSessionDetails(id: string | undefined) {
         `/session/${encodeURIComponent(id ?? '')}/with-teams-and-members`,
       ),
     enabled: token !== null && id !== undefined && id.length > 0,
+    staleTime: 5_000,
+  });
+}
+
+/**
+ * Текущий раунд — включает `myRole` и `myPendingActions` для authenticated user'а.
+ * Enabled только если сессия существует и в state RUNNING (проверяет вызывающий).
+ */
+export function useCurrentRound(id: string | undefined, enabled = true) {
+  const token = useAccessToken();
+  return useQuery({
+    queryKey: sessionKeys.currentRound(id ?? ''),
+    queryFn: () =>
+      apiFetch<RoundResponse>(
+        `/session/${encodeURIComponent(id ?? '')}/current-round`,
+      ),
+    enabled: enabled && token !== null && id !== undefined && id.length > 0,
     staleTime: 5_000,
   });
 }

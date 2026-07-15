@@ -94,7 +94,10 @@ export function Lobby() {
 
   if (token === null) return <Navigate to="/" replace />;
 
-  const sessions = data?.content ?? [];
+  // Backend не гарантирует сортировку — упорядочиваем свежие сверху для UX.
+  const sessions = [...(data?.content ?? [])].sort((a, b) =>
+    b.createdAt.localeCompare(a.createdAt),
+  );
   const canCreate = user?.role === 'ADMIN';
 
   return (

@@ -1,15 +1,17 @@
-import { useEffect, useMemo, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { StompContext } from './stomp-context';
 import { createStompClient, type StompError } from './stomp-client';
 import { useAccessToken } from '../auth-storage';
 
 /*
  * Provider для STOMP-клиента. Соединение поднимается синхронно с наличием
- * access-токена и опускается при logout'е. Ошибки backend'а из /user/queue/errors
- * пробрасываются в консоль (в MVP), позже — в toast'ы / глобальный store.
+ * access-токена и опускается при logout'е. `connected` — реактивный флаг:
+ * `client.connected` из stompjs — mutable prop, React о нём не знает, поэтому
+ * держим отдельный `useState` и обновляем через onConnect/onDisconnect handlers.
  */
 export function StompProvider({ children }: { children: ReactNode }) {
   const token = useAccessToken();
+  const [connected, setConnected] = useState(false);
 
   const client = useMemo(() => {
     if (token === null) return null;
@@ -17,16 +19,24 @@ export function StompProvider({ children }: { children: ReactNode }) {
       onError: (err: StompError) => {
         console.warn('[stomp] error:', err);
       },
+      onConnect: () => setConnected(true),
+      onDisconnect: () => setConnected(false),
     });
   }, [token]);
 
   useEffect(() => {
-    if (client === null) return;
+    if (client === null) {
+      setConnected(false);
+      return;
+    }
     client.activate();
     return () => {
+      setConnected(false);
       void client.deactivate();
     };
   }, [client]);
 
-  return <StompContext.Provider value={{ client }}>{children}</StompContext.Provider>;
+  return (
+    <StompContext.Provider value={{ client, connected }}>{children}</StompContext.Provider>
+  );
 }

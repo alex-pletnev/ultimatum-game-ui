@@ -43,15 +43,19 @@ test.describe('create session', () => {
     // sessionType остаётся FREE_FOR_ALL по дефолту, numTeams stepper скрыт
     await expect(page.getByText(/^Команд$/i)).toBeHidden();
 
-    await page.getByRole('button', { name: /Огласить партию/i }).click();
+    // Явно ждём успешный POST + последующий refetch GET /session
+    await Promise.all([
+      page.waitForResponse((r) => r.url().includes('/session') && r.request().method() === 'POST' && r.status() === 201),
+      page.getByRole('button', { name: /Огласить партию/i }).click(),
+    ]);
 
-    // Редирект в лобби, новая партия видна как карточка
     await expect(page).toHaveURL('/lobby');
-    await expect(page.getByText(sessionName)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(sessionName)).toBeVisible({ timeout: 20_000 });
     await expect(page.getByText(new RegExp(`ведущий · ${nickname}`, 'i'))).toBeVisible();
 
     // ADMIN своей партии видит CTA «Перейти к столу», без mutation'а
-    const ownCard = page.locator('div', { has: page.getByText(sessionName) }).first();
+    // Используем классовый селектор карточки — иначе `div.first()` матчит внешний grid-контейнер.
+    const ownCard = page.locator('.rounded-card', { hasText: sessionName });
     await ownCard.getByRole('link', { name: /Перейти к столу/i }).click();
 
     await expect(page).toHaveURL(new RegExp('/session/[0-9a-f-]+'));

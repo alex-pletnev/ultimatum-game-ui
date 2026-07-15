@@ -12,8 +12,11 @@ export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  retries: process.env.CI ? 2 : 1,
+  // Shared backend (один Kotlin/Spring instance на все workers) даёт racы под нагрузкой:
+  // POST /session → invalidate + refetch GET /session может отстать. workers=1 — sequential
+  // прогон, стабильный. Локально e2e и так быстрый (~10-60s), задача на CI можно вернуть 2.
+  workers: 1,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     baseURL: BASE_URL,
