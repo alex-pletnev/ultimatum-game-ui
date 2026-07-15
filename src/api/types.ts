@@ -54,6 +54,51 @@ export type UserIdResponse = {
   id: string;
 };
 
+/* ────────────────────  Session (read-only минимум для лобби)  ────────────── */
+
+export type SessionConfigResponse = {
+  sessionType: SessionType;
+  numRounds: number;
+  numTeams: number;
+  numPlayers: number;
+  roundSum: number;
+  timeoutMoveSec: number;
+};
+
+export type RoundPrewResponse = {
+  id: string;
+  roundNumber: number;
+  roundPhase: RoundPhase;
+};
+
+export type TeamPrewResponse = {
+  id: string;
+  name: string;
+  size: number;
+};
+
+export type SessionResponse = {
+  id: string;
+  displayName: string;
+  state: SessionState;
+  createdAt: string;
+  admin: UserResponse;
+  openToConnect: boolean;
+  rounds: RoundPrewResponse[];
+  config: SessionConfigResponse;
+  teams: TeamPrewResponse[];
+  currentRound: RoundPrewResponse | null;
+};
+
+/** Spring Data Page — минимальный набор полей, которые фронту нужны. */
+export type Page<T> = {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+};
+
 /* ────────────────────  Errors  ─────────────────── */
 
 export type ApiErrorResponse = {

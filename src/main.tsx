@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Route, Routes } from 'react-router';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { App } from './App';
+import { Lobby } from './routes/Lobby';
 import { Register } from './routes/Register';
 import { StyleGuide } from './routes/StyleGuide';
 import { createQueryClient } from './api/query-client';
@@ -22,6 +23,7 @@ createRoot(rootElement).render(
           <Routes>
             <Route path="/" element={<App />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/lobby" element={<Lobby />} />
             <Route path="/_style-guide" element={<StyleGuide />} />
           </Routes>
         </BrowserRouter>
