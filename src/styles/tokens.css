@@ -1,0 +1,113 @@
+/*
+ * Design tokens — фэнтези-настолка × Claude Code.
+ *
+ * Правила:
+ *   1. Никаких hex-цветов вне этого файла (единственное исключение — style-guide swatches).
+ *   2. Всё, что живёт под `@theme`, автоматически доступно как Tailwind-утилита (v4).
+ *   3. Ключ метафоры — свеча над столом: тёплый чёрно-коричневый фон,
+ *      пергамент с чернилами, латунь для акцентов, воск/огонь для действий.
+ */
+
+@theme {
+  /* ─────────────────────────  Night (фоны, «стол в полутьме»)  ───────────────────────── */
+  --color-night-50:  #d4c9be;
+  --color-night-100: #a89787;
+  --color-night-200: #7c6653;
+  --color-night-300: #574636;
+  --color-night-400: #3d3025;
+  --color-night-500: #2e241b;
+  --color-night-600: #241b14;
+  --color-night-700: #1c150f;
+  --color-night-800: #16110b;
+  --color-night-900: #100c08;
+  --color-night-950: #0a0806;
+
+  /* ─────────────────────────  Parchment (карты, свитки, «страницы»)  ─────────────────── */
+  --color-parchment-50:  #fbf5e4;
+  --color-parchment-100: #f4ead0;
+  --color-parchment-200: #ecdcae;
+  --color-parchment-300: #dcc588;
+  --color-parchment-400: #c4a662;
+  --color-parchment-500: #a4884a;
+
+  /* ─────────────────────────  Ink (текст на пергаменте, тиснение)  ───────────────────── */
+  --color-ink-900: #241a10;
+  --color-ink-950: #150e08;
+
+  /* ─────────────────────────  Ember (действие, «свеча», Claude-accent)  ──────────────── */
+  --color-ember-300: #f6c088;
+  --color-ember-400: #ef9a56;
+  --color-ember-500: #dc7a2e;   /* базовый акцент */
+  --color-ember-600: #b4591a;
+  --color-ember-700: #8b4013;
+
+  /* ─────────────────────────  Brass (латунь, инициалы, разделители)  ─────────────────── */
+  --color-brass-300: #e6cd8a;
+  --color-brass-400: #cfb066;
+  --color-brass-500: #a8873f;
+  --color-brass-600: #7d642c;
+
+  /* ─────────────────────────  Blood (отказ, опасность, «сургуч»)  ────────────────────── */
+  --color-blood-400: #b84343;
+  --color-blood-500: #8f2a2a;
+  --color-blood-600: #6a1c1c;
+
+  /* ─────────────────────────  Verdigris (окисленная медь, «холодный» баланс)  ────────── */
+  --color-verdigris-500: #4a7c74;
+  --color-verdigris-600: #345953;
+
+  /* ─────────────────────────  Шрифты  ────────────────────────────────────────────────── */
+  --font-display: 'Cinzel', 'IM Fell English SC', ui-serif, Georgia, serif;
+  --font-body:    'EB Garamond', 'IM Fell English', ui-serif, Georgia, serif;
+  --font-mono:    'JetBrains Mono', 'Berkeley Mono', ui-monospace, SFMono-Regular, monospace;
+
+  /* ─────────────────────────  Радиусы (потёртые карты, круглые токены)  ──────────────── */
+  --radius-panel:  2px;
+  --radius-card:   6px;
+  --radius-inset:  3px;
+  --radius-token:  9999px;
+
+  /* ─────────────────────────  Тени («свеча над столом»)  ─────────────────────────────── */
+  --shadow-parchment:
+    0 1px 0 rgba(30, 20, 12, 0.4),
+    0 8px 24px -6px rgba(0, 0, 0, 0.55),
+    0 24px 60px -12px rgba(0, 0, 0, 0.45);
+
+  --shadow-candlelit:
+    0 0 24px rgba(220, 122, 46, 0.08),
+    0 12px 40px -8px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(246, 192, 136, 0.05);
+
+  --shadow-wax-inset:
+    inset 0 2px 4px rgba(0, 0, 0, 0.45),
+    inset 0 -1px 2px rgba(246, 192, 136, 0.2);
+}
+
+/* ─────────────────────────────  База документа  ─────────────────────────────────────── */
+
+html,
+body {
+  background-color: var(--color-night-900);
+  color: var(--color-parchment-100);
+  font-family: var(--font-body);
+  font-feature-settings: 'liga' 1, 'kern' 1;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * Лёгкая «пылинка» на всём фоне — не текстура, а модуляция освещения.
+ * Через radial-gradient, чтобы не тянуть картинку.
+ */
+body {
+  background-image:
+    radial-gradient(circle at 30% 20%, rgba(220, 122, 46, 0.05), transparent 50%),
+    radial-gradient(circle at 70% 80%, rgba(74, 124, 116, 0.03), transparent 55%);
+  background-attachment: fixed;
+}
+
+/* Selection — красноватый воск, а не системный синий */
+::selection {
+  background: var(--color-ember-500);
+  color: var(--color-night-950);
+}
