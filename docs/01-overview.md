@@ -16,7 +16,7 @@ _(Стека физически ещё нет — код появится в T-0
 |------|------------|-------------|
 | Bundler / dev-server | Vite | Быстрый HMR, минимум конфига |
 | Language | TypeScript | Строгий tsconfig |
-| UI-framework | React 18 | Function components + hooks |
+| UI-framework | React 19 | Function components + hooks |
 | Стили | TailwindCSS + CSS variables | Custom design tokens под Claude-brand |
 | Компоненты | shadcn/ui (copy-paste) | Не либа — свой код в `src/components/ui/` |
 | Анимации | Framer Motion | Physicality: карты вращаются, фишки «падают» |

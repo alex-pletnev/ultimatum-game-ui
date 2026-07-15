@@ -1,6 +1,6 @@
 {
   "PROJECT_NAME": "ultimatum-game-ui",
-  "STACK": "TypeScript/Vite + React 18 + TailwindCSS + shadcn/ui + Framer Motion + TanStack Query + Zustand + React Router + pnpm",
+  "STACK": "TypeScript/Vite + React 19 + TailwindCSS + shadcn/ui + Framer Motion + TanStack Query + Zustand + React Router + pnpm",
   "PRIMARY_BRANCH": "main",
   "BUILD_COMMAND": "pnpm build",
   "TEST_COMMAND": "pnpm test",

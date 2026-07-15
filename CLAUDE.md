@@ -10,7 +10,7 @@
 - Документация — `docs/` (индекс: `docs/README.md`).
 - Таск-трекер — `docs/tasks/` (индекс: `docs/tasks/INDEX.md`, формат: `docs/tasks/README.md`).
 - Не создавать документацию/файлы без явной необходимости или запроса пользователя.
-- Проект: **ultimatum-game-ui** — TypeScript/Vite + React 18 + TailwindCSS + shadcn/ui + Framer Motion + TanStack Query + Zustand + React Router + pnpm _(планируемый стек; сам код появится в T-001..T-00N)_.
+- Проект: **ultimatum-game-ui** — TypeScript/Vite + React 19 + TailwindCSS + shadcn/ui + Framer Motion + TanStack Query + Zustand + React Router + pnpm _(планируемый стек; сам код появится в T-001..T-00N)_.
 
 ## Session-start ritual (первое сообщение новой сессии)
 
