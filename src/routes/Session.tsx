@@ -4,6 +4,7 @@ import { WaxSeal } from '../components/WaxSeal';
 import { useAccessToken } from '../api/auth-storage';
 import { useCurrentUser } from '../api/auth-queries';
 import { useSessionDetails } from '../api/session-queries';
+import { useSessionLiveSync } from '../api/ws/useSessionLiveSync';
 import type { SessionWithTeamsAndMembersResponse, UserResponse } from '../api/types';
 
 function myRoleAtTable(
@@ -39,6 +40,7 @@ export function Session() {
   const { id } = useParams<{ id: string }>();
   const { data: user } = useCurrentUser();
   const { data: session, isLoading, isError } = useSessionDetails(id);
+  const { connected: liveConnected } = useSessionLiveSync(id);
 
   if (token === null) return <Navigate to="/" replace />;
 
@@ -86,8 +88,15 @@ export function Session() {
     <div className="mx-auto max-w-3xl px-8 py-16">
       <header className="mb-10 flex items-baseline justify-between border-b border-brass-500/30 pb-6">
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-brass-500">
+          <p className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.4em] text-brass-500">
             У стола · роль {myRole}
+            <span
+              aria-label={liveConnected ? 'подключено к живой ленте' : 'подключение к живой ленте'}
+              title={liveConnected ? 'живая лента активна' : 'ждём подключение'}
+              className={`inline-block h-2 w-2 rounded-token ${
+                liveConnected ? 'bg-verdigris-500' : 'bg-brass-500/40'
+              }`}
+            />
           </p>
           <h1 className="mt-2 font-display text-3xl uppercase tracking-[0.16em] text-parchment-100">
             {session.displayName}

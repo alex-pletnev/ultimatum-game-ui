@@ -23,6 +23,7 @@
 | T-007 | Лобби — список открытых партий как афиши | done | 2026-07-15 | [T-007-lobby-session-list.md](T-007-lobby-session-list.md) |
 | T-008 | Экран учреждения партии (ADMIN → POST /session) | done | 2026-07-15 | [T-008-create-session-screen.md](T-008-create-session-screen.md) |
 | T-009 | Join сессии + заглушка экрана игры | done | 2026-07-15 | [T-009-join-session-and-placeholder-screen.md](T-009-join-session-and-placeholder-screen.md) |
+| T-010 | WS live-sync — состав партии обновляется реалтайм | done | 2026-07-15 | [T-010-session-live-sync.md](T-010-session-live-sync.md) |
 
 ## Легенда статусов
 
