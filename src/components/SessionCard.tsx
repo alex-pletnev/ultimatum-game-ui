@@ -1,48 +1,80 @@
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router';
 import { Parchment } from './Parchment';
 import { WaxSeal } from './WaxSeal';
-import type { SessionResponse } from '../api/types';
-
-/*
- * «Афиша партии» — пергаментная карточка сессии в лобби.
- * Монограмма ведущего · displayName · тип · места · раунды · disabled CTA.
- */
+import { useJoinSession } from '../api/session-queries';
+import { ApiError } from '../api/client';
+import type { SessionResponse, UserResponse } from '../api/types';
 
 function sessionTypeLabel(type: SessionResponse['config']['sessionType']): string {
   return type === 'TEAM_BATTLE' ? 'Битва команд' : 'Все против всех';
 }
 
 function currentSeatsTaken(session: SessionResponse): number {
-  // Backend в SessionResponse не отдаёт members напрямую (только TeamPrew.size).
-  // Для FFA считаем через размер команд (в FFA — одна фиктивная команда) либо 0,
-  // если teams пусты. С '/with-teams-and-members' точнее, но здесь — обзор.
   return session.teams.reduce((sum, t) => sum + t.size, 0);
 }
 
+type CtaState =
+  | { kind: 'own'; href: string }
+  | { kind: 'team-unsupported' }
+  | { kind: 'join'; onClick: () => void; isPending: boolean; error: string | null };
+
 type Props = {
   session: SessionResponse;
+  currentUser: UserResponse | undefined;
 };
 
-export function SessionCard({ session }: Props) {
+export function SessionCard({ session, currentUser }: Props) {
   const initial = session.admin.nickname.charAt(0).toUpperCase();
   const taken = currentSeatsTaken(session);
   const total = session.config.numPlayers;
+  const isTeam = session.config.sessionType === 'TEAM_BATTLE';
+  const isOwn = currentUser !== undefined && session.admin.id === currentUser.id;
+
+  const join = useJoinSession();
+  const navigate = useNavigate();
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  const cta: CtaState = isOwn
+    ? { kind: 'own', href: `/session/${session.id}` }
+    : isTeam
+      ? { kind: 'team-unsupported' }
+      : {
+          kind: 'join',
+          isPending: join.isPending,
+          error: localError,
+          onClick: () => {
+            setLocalError(null);
+            join.mutate(
+              { sessionId: session.id },
+              {
+                onSuccess: () => navigate(`/session/${session.id}`),
+                onError: (e) => {
+                  const msg =
+                    e instanceof ApiError
+                      ? e.body?.message ?? e.message
+                      : 'Стол не отвечает';
+                  setLocalError(msg);
+                },
+              },
+            );
+          },
+        };
 
   return (
     <Parchment className="flex flex-col gap-5">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <WaxSeal size={56} monogram={initial} />
-          <div className="flex flex-col">
-            <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-brass-600">
-              {sessionTypeLabel(session.config.sessionType)}
-            </p>
-            <h3 className="font-display text-xl uppercase tracking-[0.16em] text-ink-950">
-              {session.displayName}
-            </h3>
-            <p className="mt-1 font-body text-sm italic text-ink-900/70">
-              ведущий · {session.admin.nickname}
-            </p>
-          </div>
+      <div className="flex items-start gap-4">
+        <WaxSeal size={56} monogram={initial} />
+        <div className="flex flex-col">
+          <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-brass-600">
+            {sessionTypeLabel(session.config.sessionType)}
+          </p>
+          <h3 className="font-display text-xl uppercase tracking-[0.16em] text-ink-950">
+            {session.displayName}
+          </h3>
+          <p className="mt-1 font-body text-sm italic text-ink-900/70">
+            ведущий · {session.admin.nickname}
+          </p>
         </div>
       </div>
 
@@ -71,14 +103,46 @@ export function SessionCard({ session }: Props) {
         </div>
       </dl>
 
-      <button
-        type="button"
-        disabled
-        title="Скоро — присоединение к партии (T-008)"
-        className="cursor-not-allowed rounded-panel border border-ember-600/30 bg-ember-500/60 px-6 py-2 font-display text-xs uppercase tracking-[0.24em] text-night-950/60"
-      >
-        Заявиться в партию
-      </button>
+      {cta.kind === 'own' && (
+        <Link
+          to={cta.href}
+          className="rounded-panel border border-ember-600/40 bg-ember-500 px-6 py-2 text-center font-display text-xs uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px]"
+        >
+          Перейти к столу
+        </Link>
+      )}
+
+      {cta.kind === 'team-unsupported' && (
+        <button
+          type="button"
+          disabled
+          title="Битвы команд — скоро (T-010+)"
+          className="cursor-not-allowed rounded-panel border border-ember-600/30 bg-ember-500/60 px-6 py-2 font-display text-xs uppercase tracking-[0.24em] text-night-950/60"
+        >
+          Битвы команд — скоро
+        </button>
+      )}
+
+      {cta.kind === 'join' && (
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={cta.onClick}
+            disabled={cta.isPending}
+            className="rounded-panel border border-ember-600/40 bg-ember-500 px-6 py-2 font-display text-xs uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-wait disabled:opacity-60"
+          >
+            {cta.isPending ? 'занимаем место…' : 'Заявиться в партию'}
+          </button>
+          {cta.error !== null && (
+            <p
+              role="alert"
+              className="font-body text-xs italic text-blood-600"
+            >
+              {cta.error}
+            </p>
+          )}
+        </div>
+      )}
     </Parchment>
   );
 }

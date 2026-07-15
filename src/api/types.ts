@@ -107,6 +107,20 @@ export type SessionResponse = {
   currentRound: RoundPrewResponse | null;
 };
 
+/** Team с полными members'ами — для экрана /session/:id. */
+export type TeamResponse = {
+  id: string;
+  name: string;
+  members: UserResponse[];
+};
+
+/** Session с раскрытыми участниками. Возвращается `GET /session/{id}/with-teams-and-members` и `POST /session/{id}/join`. */
+export type SessionWithTeamsAndMembersResponse = Omit<SessionResponse, 'teams'> & {
+  teams: TeamResponse[];
+  members: UserResponse[];
+  observers: UserResponse[];
+};
+
 /** Spring Data Page — минимальный набор полей, которые фронту нужны. */
 export type Page<T> = {
   content: T[];

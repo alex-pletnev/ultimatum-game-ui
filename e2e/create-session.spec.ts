@@ -49,5 +49,15 @@ test.describe('create session', () => {
     await expect(page).toHaveURL('/lobby');
     await expect(page.getByText(sessionName)).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText(new RegExp(`ведущий · ${nickname}`, 'i'))).toBeVisible();
+
+    // ADMIN своей партии видит CTA «Перейти к столу», без mutation'а
+    const ownCard = page.locator('div', { has: page.getByText(sessionName) }).first();
+    await ownCard.getByRole('link', { name: /Перейти к столу/i }).click();
+
+    await expect(page).toHaveURL(new RegExp('/session/[0-9a-f-]+'));
+    await expect(page.getByRole('heading', { name: new RegExp(sessionName) })).toBeVisible();
+    await expect(page.getByText(/У стола · роль ведущий/i)).toBeVisible();
+    // Ведущий в списке за столом
+    await expect(page.locator('span.font-display', { hasText: nickname })).toBeVisible();
   });
 });

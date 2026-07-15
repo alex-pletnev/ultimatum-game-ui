@@ -116,7 +116,7 @@ export function Lobby() {
       {!isLoading && !isError && sessions.length > 0 && (
         <div className="grid gap-6 md:grid-cols-2">
           {sessions.map((s) => (
-            <SessionCard key={s.id} session={s} />
+            <SessionCard key={s.id} session={s} currentUser={user} />
           ))}
         </div>
       )}

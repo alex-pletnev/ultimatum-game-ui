@@ -1,11 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from './client';
 import { useAccessToken } from './auth-storage';
-import type { CreateSessionRequest, Page, SessionResponse } from './types';
+import type {
+  CreateSessionRequest,
+  Page,
+  SessionResponse,
+  SessionWithTeamsAndMembersResponse,
+} from './types';
 
 export const sessionKeys = {
   all: ['session'] as const,
   openLobby: ['session', 'open-lobby'] as const,
+  details: (id: string) => ['session', 'details', id] as const,
 };
 
 /**
@@ -35,5 +41,40 @@ export function useCreateSession() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: sessionKeys.openLobby });
     },
+  });
+}
+
+/**
+ * Присоединиться к партии как player (для TEAM_BATTLE — с teamId).
+ * Backend: POST /session/{id}/join[?teamId=<uuid>]
+ */
+export function useJoinSession() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ sessionId, teamId }: { sessionId: string; teamId?: string }) => {
+      const qs = teamId !== undefined ? `?teamId=${encodeURIComponent(teamId)}` : '';
+      return apiFetch<SessionWithTeamsAndMembersResponse>(
+        `/session/${encodeURIComponent(sessionId)}/join${qs}`,
+        { method: 'POST' },
+      );
+    },
+    onSuccess: (data) => {
+      qc.setQueryData(sessionKeys.details(data.id), data);
+      void qc.invalidateQueries({ queryKey: sessionKeys.openLobby });
+    },
+  });
+}
+
+/** Детали партии — для экрана /session/:id. */
+export function useSessionDetails(id: string | undefined) {
+  const token = useAccessToken();
+  return useQuery({
+    queryKey: sessionKeys.details(id ?? ''),
+    queryFn: () =>
+      apiFetch<SessionWithTeamsAndMembersResponse>(
+        `/session/${encodeURIComponent(id ?? '')}/with-teams-and-members`,
+      ),
+    enabled: token !== null && id !== undefined && id.length > 0,
+    staleTime: 5_000,
   });
 }

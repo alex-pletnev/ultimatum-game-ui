@@ -22,6 +22,7 @@
 | T-006 | Playwright — e2e-фундамент и первые тесты happy-path | done | 2026-07-15 | [T-006-playwright-e2e-setup.md](T-006-playwright-e2e-setup.md) |
 | T-007 | Лобби — список открытых партий как афиши | done | 2026-07-15 | [T-007-lobby-session-list.md](T-007-lobby-session-list.md) |
 | T-008 | Экран учреждения партии (ADMIN → POST /session) | done | 2026-07-15 | [T-008-create-session-screen.md](T-008-create-session-screen.md) |
+| T-009 | Join сессии + заглушка экрана игры | done | 2026-07-15 | [T-009-join-session-and-placeholder-screen.md](T-009-join-session-and-placeholder-screen.md) |
 
 ## Легенда статусов
 
