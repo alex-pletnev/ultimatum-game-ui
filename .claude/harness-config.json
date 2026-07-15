@@ -1,0 +1,12 @@
+{
+  "PROJECT_NAME": "ultimatum-game-ui",
+  "STACK": "TypeScript/Vite + React 18 + TailwindCSS + shadcn/ui + Framer Motion + TanStack Query + Zustand + React Router + pnpm",
+  "PRIMARY_BRANCH": "main",
+  "BUILD_COMMAND": "pnpm build",
+  "TEST_COMMAND": "pnpm test",
+  "LANGUAGE": "RU",
+  "PROJECT_CONTEXT": "Frontend-only SPA для ultimatum-game backend (Python/FastAPI, docs в frontend-integration/). Solo/personal, вайб-кодинг, пользователь не фронтендер. Стиль — фирменный Claude Code, переосмысленный как настольная игра (иммерсивный UI, «попадаешь внутрь настолки», не типовой сайт). MVP-ориентированный.",
+  "PROFILE": "frontend-spa",
+  "SETUP_DATE": "2026-07-15",
+  "AXES_TRIGGERED": ["Speed-first", "Solo-mode", "Exploration-first", "Stylistic-directive"]
+}
