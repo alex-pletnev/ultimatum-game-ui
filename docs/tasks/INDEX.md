@@ -24,6 +24,13 @@
 | T-008 | Экран учреждения партии (ADMIN → POST /session) | done | 2026-07-15 | [T-008-create-session-screen.md](T-008-create-session-screen.md) |
 | T-009 | Join сессии + заглушка экрана игры | done | 2026-07-15 | [T-009-join-session-and-placeholder-screen.md](T-009-join-session-and-placeholder-screen.md) |
 | T-010 | WS live-sync — состав партии обновляется реалтайм | done | 2026-07-15 | [T-010-session-live-sync.md](T-010-session-live-sync.md) |
+| T-011 | pnpm snap — ad-hoc screenshot скрипт | done | 2026-07-15 | [T-011-pnpm-snap-script.md](T-011-pnpm-snap-script.md) |
+
+## Закрытые consolidation-циклы
+
+| Дата | После задачи | Задач в окне | Заведено meta-задач |
+|------|--------------|--------------|--------------------|
+| 2026-07-15 | T-010 | 10 | T-011 (snap-скрипт) |
 
 ## Легенда статусов
 

@@ -243,6 +243,10 @@ Refs: docs/tasks/T-XXX-*.md
 
 После UI-изменений (правки в `src/App.tsx`, `src/routes/**`, `src/components/**`) — прогнать `pnpm test:e2e`. При провале Playwright сохраняет screenshot в `test-results/<test-name>/test-failed-1.png` — прочитать его через Read tool, увидеть визуальное состояние, поправить. Это заменяет «попроси пользователя посмотреть в браузере» — агент сам делает первую проверку.
 
+**Ad-hoc snapshot без падающего теста:**
+
+Быстрый sanity-check конкретной страницы — `pnpm snap --path /lobby --out /tmp/snap.png` (или `--register admin` для авторизованных экранов). Скрипт `scripts/snap.mjs` регистрирует уникального пользователя, ходит на страницу, снимает fullPage screenshot. Требует поднятого `pnpm dev`; backend — только для `--register`.
+
 ## Долгие команды — эвристика ожидания
 
 Baseline'ы для этого проекта (с прогретым кэшем):

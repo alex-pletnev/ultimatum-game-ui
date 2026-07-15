@@ -1,0 +1,22 @@
+{
+  "last_run_date": "2026-07-15",
+  "last_run_after_task": "T-010",
+  "closed_tasks_count_at_last_run": 10,
+  "patterns_found": [
+    {
+      "theme": "код без сверки с референсом/окружением",
+      "tasks": ["bootstrap→T-004 fix", "T-002", "T-008"],
+      "action_taken": "no new task — правило уже покрыто skill'ом .claude/skills/wheel-check.md; фиксируем как урок, применять активнее"
+    },
+    {
+      "theme": "старые тесты/mocks не переоценены при UI-изменении",
+      "tasks": ["T-008 lobby mocks", "T-008 e2e locator"],
+      "action_taken": "no new task — покрыто общим правилом CLAUDE.md «после изменений — прогонять тесты, разбираться со сломанными assumption'ами»; применять активнее"
+    },
+    {
+      "theme": "ad-hoc playwright screenshot полезен (позитивный паттерн)",
+      "tasks": ["T-007", "T-008", "T-009", "T-010"],
+      "action_taken": "завел T-011 tooling/pnpm-snap-script — реальная утилита, не правило"
+    }
+  ]
+}
