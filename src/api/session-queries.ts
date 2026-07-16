@@ -70,16 +70,20 @@ export function useJoinSession() {
   });
 }
 
-/** Детали партии — для экрана /session/:id. */
+/**
+ * Детали партии — для экрана /session/:id + для публичной /stats.
+ * Не блокируем `enabled` токеном: backend отдаёт `with-teams-and-members`
+ * анонимно для read-only просмотра (см. BACKEND-FIX-public-stats-endpoint.md).
+ * Для гейплей-экрана авторизация проверяется отдельно (Navigate в Session).
+ */
 export function useSessionDetails(id: string | undefined) {
-  const token = useAccessToken();
   return useQuery({
     queryKey: sessionKeys.details(id ?? ''),
     queryFn: () =>
       apiFetch<SessionWithTeamsAndMembersResponse>(
         `/session/${encodeURIComponent(id ?? '')}/with-teams-and-members`,
       ),
-    enabled: token !== null && id !== undefined && id.length > 0,
+    enabled: id !== undefined && id.length > 0,
     staleTime: 5_000,
   });
 }

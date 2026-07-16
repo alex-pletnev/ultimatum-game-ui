@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link, Navigate, useParams } from 'react-router';
+import { Link, useParams } from 'react-router';
 import {
   Bar,
   BarChart,
@@ -17,7 +17,6 @@ import {
 } from 'recharts';
 import { Parchment } from '../components/Parchment';
 import { WaxSeal } from '../components/WaxSeal';
-import { useAccessToken } from '../api/auth-storage';
 import { useSessionDetails } from '../api/session-queries';
 import { useSessionStats, type StatsRow } from '../api/stats-queries';
 import {
@@ -371,7 +370,8 @@ function RawTable({ rows }: { rows: StatsRow[] }) {
 /* ────────────────────  Main page  ──────────────────── */
 
 export function Stats() {
-  const token = useAccessToken();
+  // Публичная страница — открывается по прямой ссылке без auth
+  // (BACKEND-FIX-public-stats-endpoint.md).
   const { id } = useParams<{ id: string }>();
   const { data: session } = useSessionDetails(id);
   const { data: rows, isLoading, isError } = useSessionStats(id);
@@ -385,8 +385,6 @@ export function Stats() {
   );
   const histogram = useMemo(() => computeHistogram(rows ?? [], roundSum), [rows, roundSum]);
   const timeline = useMemo(() => computeTimeline(rows ?? []), [rows]);
-
-  if (token === null) return <Navigate to="/" replace />;
 
   if (isLoading) {
     return (

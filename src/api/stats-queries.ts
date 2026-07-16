@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiFetchText } from './client';
-import { useAccessToken } from './auth-storage';
 import { parseCsv } from './csv';
 
 /*
@@ -48,9 +47,10 @@ function toRow(raw: Record<string, string>): StatsRow {
 /**
  * Загружает и парсит CSV статистики партии.
  * Пустая партия (0 офферов) вернёт пустой массив — не ошибка.
+ * Endpoint публичный (BACKEND-FIX-public-stats-endpoint.md), поэтому
+ * `enabled` не смотрит на access-token — страница открывается по ссылке.
  */
 export function useSessionStats(id: string | undefined) {
-  const token = useAccessToken();
   return useQuery<StatsRow[]>({
     queryKey: statsKeys.session(id ?? ''),
     queryFn: async () => {
@@ -59,7 +59,7 @@ export function useSessionStats(id: string | undefined) {
       );
       return parseCsv(csv).map(toRow);
     },
-    enabled: token !== null && id !== undefined && id.length > 0,
+    enabled: id !== undefined && id.length > 0,
     staleTime: 5_000,
   });
 }
