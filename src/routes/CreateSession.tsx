@@ -76,7 +76,7 @@ export function CreateSession() {
           autoAdvanceRounds,
         },
       },
-      { onSuccess: () => navigate('/lobby') },
+      { onSuccess: (created) => navigate(`/session/${created.id}`) },
     );
   };
 

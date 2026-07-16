@@ -12,7 +12,9 @@ import type {
 
 export const sessionKeys = {
   all: ['session'] as const,
-  openLobby: ['session', 'open-lobby'] as const,
+  openLobby: (page: number, size: number) =>
+    ['session', 'open-lobby', page, size] as const,
+  openLobbyAll: ['session', 'open-lobby'] as const,
   details: (id: string) => ['session', 'details', id] as const,
   currentRound: (id: string) => ['session', 'current-round', id] as const,
   score: (id: string) => ['session', 'score', id] as const,
@@ -21,14 +23,15 @@ export const sessionKeys = {
 /**
  * Открытые для присоединения партии: state=CREATED + openToConnect=true.
  * FINISHED и ABORTED — не показываем; они не годятся для «афиши».
+ * Page-параметры соответствуют Spring Data (page 0-based).
  */
-export function useOpenSessions() {
+export function useOpenSessions(page = 0, size = 8) {
   const token = useAccessToken();
   return useQuery({
-    queryKey: sessionKeys.openLobby,
+    queryKey: sessionKeys.openLobby(page, size),
     queryFn: () =>
       apiFetch<Page<SessionResponse>>(
-        '/session?openToConnect=true&state=CREATED&page=0&pageSize=100',
+        `/session?openToConnect=true&state=CREATED&page=${page}&pageSize=${size}`,
       ),
     enabled: token !== null,
     // Лобби живое — обновляем чаще обычного.
@@ -44,7 +47,7 @@ export function useCreateSession() {
     mutationFn: (body: CreateSessionRequest) =>
       apiFetch<SessionResponse>('/session', { method: 'POST', body }),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: sessionKeys.openLobby });
+      void qc.invalidateQueries({ queryKey: sessionKeys.openLobbyAll });
     },
   });
 }
@@ -65,7 +68,7 @@ export function useJoinSession() {
     },
     onSuccess: (data) => {
       qc.setQueryData(sessionKeys.details(data.id), data);
-      void qc.invalidateQueries({ queryKey: sessionKeys.openLobby });
+      void qc.invalidateQueries({ queryKey: sessionKeys.openLobbyAll });
     },
   });
 }

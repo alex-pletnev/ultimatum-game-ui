@@ -43,18 +43,14 @@ test.describe('create session', () => {
     // sessionType остаётся FREE_FOR_ALL по дефолту, numTeams stepper скрыт
     await expect(page.getByText(/^Команд$/i)).toBeHidden();
 
-    // Ловим POST-response, чтобы взять id новой сессии и перейти на её страницу напрямую.
-    // Не проверяем появление карточки в лобби через DOM (см. T-014 — Playwright race
-    // с React StrictMode + Vite HMR; в реальном браузере карточка видна сразу).
+    // После create — автопереход на /session/:id (заменил старый redirect на /lobby).
     const [postResponse] = await Promise.all([
       page.waitForResponse((r) => r.url().includes('/session') && r.request().method() === 'POST' && r.status() === 201),
       page.getByRole('button', { name: /Огласить партию/i }).click(),
     ]);
     const created = (await postResponse.json()) as { id: string };
 
-    await expect(page).toHaveURL('/lobby');
-    await page.goto(`/session/${created.id}`);
-    await expect(page).toHaveURL(new RegExp('/session/[0-9a-f-]+'));
+    await expect(page).toHaveURL(new RegExp(`/session/${created.id}`));
     await expect(page.getByRole('heading', { name: new RegExp(sessionName) })).toBeVisible();
     await expect(page.getByText(/У стола · роль ведущий/i)).toBeVisible();
     // Ведущий в списке за столом

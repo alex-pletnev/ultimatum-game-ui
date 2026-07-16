@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, Navigate, useParams } from 'react-router';
+import { useEffect, useRef, useState } from 'react';
+import { Link, Navigate, useNavigate, useParams } from 'react-router';
 import { AddNpcPanel } from '../components/AddNpcPanel';
 import { Parchment } from '../components/Parchment';
 import { WaxSeal } from '../components/WaxSeal';
@@ -413,6 +413,7 @@ function MemberRow({ user, sub }: { user: UserResponse; sub?: string }) {
 export function Session() {
   const token = useAccessToken();
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { data: user } = useCurrentUser();
   const { data: session, isLoading, isError } = useSessionDetails(id);
   const { connected: liveConnected } = useSessionLiveSync(id);
@@ -422,6 +423,17 @@ export function Session() {
   const isRunning = session?.state === 'RUNNING';
   const { data: round } = useCurrentRound(id, isRunning);
   const { data: score } = useSessionScore(id);
+
+  // Автопереход на /stats при переходе в FINISHED. Задержка даёт увидеть
+  // финальный экран с табло, а `redirected` предохраняет от повторного
+  // navigate при возврате пользователя (кнопка «назад») на уже FINISHED-сессию.
+  const redirected = useRef(false);
+  useEffect(() => {
+    if (session?.state !== 'FINISHED' || redirected.current || id === undefined) return;
+    redirected.current = true;
+    const t = setTimeout(() => navigate(`/session/${id}/stats`), 4000);
+    return () => clearTimeout(t);
+  }, [session?.state, id, navigate]);
 
   if (token === null) return <Navigate to="/" replace />;
 
@@ -645,15 +657,20 @@ export function Session() {
           )}
 
           {session.state === 'FINISHED' && (
-            <RoundResultPanel
-              sessionId={session.id}
-              score={score}
-              currentUserId={user.id}
-              isAdmin={myRole === 'ведущий'}
-              isSessionRunning={false}
-              isLastRound
-              liveConnected={liveConnected}
-            />
+            <>
+              <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600">
+                Через мгновение — в летопись…
+              </p>
+              <RoundResultPanel
+                sessionId={session.id}
+                score={score}
+                currentUserId={user.id}
+                isAdmin={myRole === 'ведущий'}
+                isSessionRunning={false}
+                isLastRound
+                liveConnected={liveConnected}
+              />
+            </>
           )}
 
           {session.state === 'CREATED' && myRole === 'ведущий' && (

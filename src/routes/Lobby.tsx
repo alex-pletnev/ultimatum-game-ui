@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { Link, Navigate } from 'react-router';
 import { useAccessToken } from '../api/auth-storage';
 import { useCurrentUser } from '../api/auth-queries';
 import { useOpenSessions } from '../api/session-queries';
+
+const PAGE_SIZE = 8;
 import { SessionCard } from '../components/SessionCard';
 import { Parchment } from '../components/Parchment';
 import { WaxSeal } from '../components/WaxSeal';
@@ -95,10 +98,53 @@ function ErrorState({ retry }: { retry: () => void }) {
   );
 }
 
+function PaginationControls({
+  page,
+  totalPages,
+  totalElements,
+  onPage,
+}: {
+  page: number;
+  totalPages: number;
+  totalElements: number;
+  onPage: (next: number) => void;
+}) {
+  if (totalPages <= 1) return null;
+  const canPrev = page > 0;
+  const canNext = page + 1 < totalPages;
+  return (
+    <nav
+      aria-label="Пагинация лобби"
+      className="mt-8 flex items-center justify-center gap-4 font-mono text-[10px] uppercase tracking-[0.3em] text-parchment-300/70"
+    >
+      <button
+        type="button"
+        onClick={() => canPrev && onPage(page - 1)}
+        disabled={!canPrev}
+        className="rounded-panel border border-brass-500/40 px-3 py-1.5 transition hover:border-ember-500 hover:text-ember-400 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-brass-500/40 disabled:hover:text-parchment-300/70"
+      >
+        ← новее
+      </button>
+      <span className="text-parchment-300/80">
+        {page + 1} / {totalPages} · всего {totalElements}
+      </span>
+      <button
+        type="button"
+        onClick={() => canNext && onPage(page + 1)}
+        disabled={!canNext}
+        className="rounded-panel border border-brass-500/40 px-3 py-1.5 transition hover:border-ember-500 hover:text-ember-400 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-brass-500/40 disabled:hover:text-parchment-300/70"
+      >
+        старее →
+      </button>
+    </nav>
+  );
+}
+
 export function Lobby() {
   const token = useAccessToken();
   const { data: user } = useCurrentUser();
-  const { data, isLoading, isError, refetch } = useOpenSessions();
+  const [page, setPage] = useState(0);
+  const { data, isLoading, isError, refetch } = useOpenSessions(page, PAGE_SIZE);
 
   if (token === null) return <Navigate to="/" replace />;
 
@@ -125,11 +171,19 @@ export function Lobby() {
       {!isLoading && !isError && sessions.length === 0 && <EmptyState />}
 
       {!isLoading && !isError && sessions.length > 0 && (
-        <div className="grid gap-6 md:grid-cols-2">
-          {sessions.map((s) => (
-            <SessionCard key={s.id} session={s} currentUser={user} />
-          ))}
-        </div>
+        <>
+          <div className="grid gap-6 md:grid-cols-2">
+            {sessions.map((s) => (
+              <SessionCard key={s.id} session={s} currentUser={user} />
+            ))}
+          </div>
+          <PaginationControls
+            page={page}
+            totalPages={data?.totalPages ?? 1}
+            totalElements={data?.totalElements ?? sessions.length}
+            onPage={setPage}
+          />
+        </>
       )}
     </div>
   );

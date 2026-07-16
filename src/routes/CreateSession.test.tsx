@@ -65,6 +65,7 @@ function renderCreate() {
           <Route path="/" element={<div>home</div>} />
           <Route path="/lobby" element={<div>lobby</div>} />
           <Route path="/lobby/new" element={<CreateSession />} />
+          <Route path="/session/:id" element={<div>session-page</div>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -106,8 +107,8 @@ describe('CreateSession', () => {
     await user.type(screen.getByLabelText(/Название партии/i), 'Круг наивных');
     await user.click(screen.getByRole('button', { name: /Огласить партию/i }));
 
-    // Redirect на /lobby
-    await waitFor(() => expect(screen.getByText('lobby')).toBeInTheDocument());
+    // Redirect на созданную сессию (/session/:id)
+    await waitFor(() => expect(screen.getByText('session-page')).toBeInTheDocument());
 
     // Проверить, что был вызов POST /session с правильным body
     const postCall = vi
