@@ -2,7 +2,12 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import type { Client } from '@stomp/stompjs';
 import { StompContext } from '../api/ws/stomp-context';
-import { OfferPhasePanel, DecisionPhasePanel, RoundResultPanel } from './Session';
+import {
+  AbortRoundButton,
+  DecisionPhasePanel,
+  OfferPhasePanel,
+  RoundResultPanel,
+} from './Session';
 import type { RoundResponse, SessionScoreDto, UserResponse } from '../api/types';
 
 function wrapWithClient(publish: ReturnType<typeof vi.fn>) {
@@ -304,5 +309,19 @@ describe('RoundResultPanel', () => {
     );
 
     expect(screen.getByText(/Считаем очки/i)).toBeInTheDocument();
+  });
+});
+
+describe('AbortRoundButton', () => {
+  it('клик публикует round.abort', () => {
+    const publish = vi.fn();
+    render(<AbortRoundButton sessionId="s-1" liveConnected />, {
+      wrapper: wrapWithClient(publish),
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Прервать раунд/i }));
+    expect(publish).toHaveBeenCalledWith({
+      destination: '/app/session/s-1/round.abort',
+      body: '',
+    });
   });
 });

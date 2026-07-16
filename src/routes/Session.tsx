@@ -237,6 +237,51 @@ export function DecisionPhasePanel({
 }
 
 /**
+ * Маленькая кнопка «Прервать раунд» для ADMIN. Показывается в активных
+ * фазах, где abort имеет смысл (round перешёл в WAIT_OFFERS и ещё не закрыт).
+ */
+export function AbortRoundButton({
+  sessionId,
+  liveConnected,
+}: {
+  sessionId: string;
+  liveConnected: boolean;
+}) {
+  const stompSend = useStompSend();
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = () => {
+    setError(null);
+    setSending(true);
+    try {
+      stompSend(`/app/session/${sessionId}/round.abort`);
+    } catch (e) {
+      setSending(false);
+      setError(e instanceof Error ? e.message : 'Не удалось отправить команду');
+    }
+  };
+
+  return (
+    <div className="mt-2 flex flex-col items-center gap-2">
+      <button
+        type="button"
+        onClick={submit}
+        disabled={!liveConnected || sending}
+        className="rounded-panel border border-blood-600/40 bg-transparent px-4 py-1.5 font-mono text-[10px] uppercase tracking-[0.3em] text-blood-500 transition hover:bg-blood-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {sending ? 'Прерываем…' : 'Прервать раунд'}
+      </button>
+      {error !== null && (
+        <p role="alert" className="font-body text-sm italic text-blood-600">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
  * Панель финала раунда / сессии: таблица счёта + ADMIN-контрол «Следующий раунд»
  * (или «Завершить партию» на последнем). Score приходит только через WS
  * (`scoreUpdated`); mount после раунда без WS-события — покажет placeholder.
@@ -551,9 +596,15 @@ export function Session() {
                 </>
               )}
               {(round.roundPhase === 'ALL_DECISIONS_RECEIVED' ||
-                round.roundPhase === 'FINISHED') && (
+                round.roundPhase === 'FINISHED' ||
+                round.roundPhase === 'ABORTED') && (
                 <>
                   <span className="h-px w-16 bg-brass-500/60" />
+                  {round.roundPhase === 'ABORTED' && (
+                    <p className="font-body italic text-blood-600">
+                      Раунд прерван ведущим.
+                    </p>
+                  )}
                   <RoundResultPanel
                     sessionId={session.id}
                     score={score}
@@ -565,6 +616,15 @@ export function Session() {
                   />
                 </>
               )}
+              {myRole === 'ведущий' &&
+                (round.roundPhase === 'WAIT_OFFERS' ||
+                  round.roundPhase === 'ALL_OFFERS_RECEIVED' ||
+                  round.roundPhase === 'OFFERS_SENT') && (
+                  <AbortRoundButton
+                    sessionId={session.id}
+                    liveConnected={liveConnected}
+                  />
+                )}
             </>
           )}
 
