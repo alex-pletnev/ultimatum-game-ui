@@ -526,7 +526,7 @@ export function Session() {
                   Твоя роль в раунде: {round.myRole === 'BOTH' ? 'proposer + responder' : round.myRole.toLowerCase()}
                 </p>
               )}
-              {round.roundPhase === 'WAIT_OFFERS' && round.myRole !== 'NONE' && (
+              {round.roundPhase === 'WAIT_OFFERS' && myRole === 'играющий' && (
                 <>
                   <span className="h-px w-16 bg-brass-500/60" />
                   <OfferPhasePanel
@@ -538,7 +538,7 @@ export function Session() {
                   />
                 </>
               )}
-              {round.roundPhase === 'OFFERS_SENT' && round.myRole !== 'NONE' && (
+              {round.roundPhase === 'OFFERS_SENT' && myRole === 'играющий' && (
                 <>
                   <span className="h-px w-16 bg-brass-500/60" />
                   <DecisionPhasePanel

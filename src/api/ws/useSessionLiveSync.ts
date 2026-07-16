@@ -37,20 +37,14 @@ export function useSessionLiveSync(id: string | undefined): { connected: boolean
     [qc, id],
   );
 
-  const onRoundStatus = useCallback(
-    (payload: RoundResponse) => {
-      if (id === undefined) return;
-      // Не перезаписываем myRole/myPendingActions из broadcast'а (там NONE/[]).
-      qc.setQueryData<RoundResponse | undefined>(sessionKeys.currentRound(id), (prev) => ({
-        ...payload,
-        myRole: prev?.myRole ?? payload.myRole,
-        myPendingActions: prev?.myPendingActions ?? payload.myPendingActions,
-      }));
-      // При смене фазы — invalidate details тоже (session.state мог поменяться).
-      void qc.invalidateQueries({ queryKey: sessionKeys.details(id) });
-    },
-    [qc, id],
-  );
+  const onRoundStatus = useCallback(() => {
+    if (id === undefined) return;
+    // WS-payload содержит myRole=NONE и myPendingActions=[] — эти поля нужны UI'ю
+    // персонально, поэтому инвалидируем и триггерим REST-refetch вместо setQueryData.
+    // Плюс — session.state мог поменяться, инвалидируем details тоже.
+    void qc.invalidateQueries({ queryKey: sessionKeys.currentRound(id) });
+    void qc.invalidateQueries({ queryKey: sessionKeys.details(id) });
+  }, [qc, id]);
 
   // Любое per-round событие (offerCreated / decisionMade / offersShuffled) —
   // инвалидируем currentRound, чтобы REST-refetch подтянул свежие
