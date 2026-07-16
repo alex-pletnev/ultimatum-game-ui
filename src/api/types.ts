@@ -207,6 +207,26 @@ export type OffersShuffledResponse = {
   pairs: Array<{ offerId: string; proposerId: string; responderId: string }>;
 };
 
+/** Payload `/topic/session/{id}/scoreUpdated`. Кумулятивный счёт после закрытия раунда. */
+export type PlayerScore = {
+  userId: string;
+  nickname: string;
+  score: number;
+};
+
+export type TeamScore = {
+  teamId: string;
+  name: string;
+  score: number;
+};
+
+export type SessionScoreDto = {
+  roundSum: number;
+  roundsCompleted: number;
+  players: PlayerScore[];
+  teams: TeamScore[];
+};
+
 /** Spring Data Page — минимальный набор полей, которые фронту нужны. */
 export type Page<T> = {
   content: T[];

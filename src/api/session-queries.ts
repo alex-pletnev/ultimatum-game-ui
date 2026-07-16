@@ -6,6 +6,7 @@ import type {
   Page,
   RoundResponse,
   SessionResponse,
+  SessionScoreDto,
   SessionWithTeamsAndMembersResponse,
 } from './types';
 
@@ -14,6 +15,7 @@ export const sessionKeys = {
   openLobby: ['session', 'open-lobby'] as const,
   details: (id: string) => ['session', 'details', id] as const,
   currentRound: (id: string) => ['session', 'current-round', id] as const,
+  score: (id: string) => ['session', 'score', id] as const,
 };
 
 /**
@@ -79,6 +81,22 @@ export function useSessionDetails(id: string | undefined) {
       ),
     enabled: token !== null && id !== undefined && id.length > 0,
     staleTime: 5_000,
+  });
+}
+
+/**
+ * Кумулятивный счёт сессии. Данные приходят только через WS
+ * (`/topic/session/{id}/scoreUpdated`); REST-endpoint'а нет — если
+ * mount произошёл до первого `scoreUpdated`, `data` будет undefined.
+ * MVP-компромисс: refresh страницы посреди партии обнуляет счёт.
+ */
+export function useSessionScore(id: string | undefined) {
+  const token = useAccessToken();
+  return useQuery<SessionScoreDto | undefined>({
+    queryKey: sessionKeys.score(id ?? ''),
+    queryFn: () => Promise.resolve(undefined),
+    enabled: token !== null && id !== undefined && id.length > 0,
+    staleTime: Infinity,
   });
 }
 

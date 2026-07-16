@@ -8,6 +8,7 @@ import type {
   OfferCreatedResponse,
   OffersShuffledResponse,
   RoundResponse,
+  SessionScoreDto,
   SessionWithTeamsAndMembersResponse,
 } from '../types';
 
@@ -84,6 +85,21 @@ export function useSessionLiveSync(id: string | undefined): { connected: boolean
   useTopicSubscription<DecisionMadeResponse>(
     dest !== null ? `/topic/session/${dest}/decisionMade` : null,
     invalidateRound,
+  );
+
+  // Кумулятивный счёт после закрытия раунда — кладём напрямую в cache;
+  // REST-fallback'а нет, поэтому setQueryData — единственный источник.
+  const onScoreUpdated = useCallback(
+    (payload: SessionScoreDto) => {
+      if (id === undefined) return;
+      qc.setQueryData(sessionKeys.score(id), payload);
+    },
+    [qc, id],
+  );
+
+  useTopicSubscription<SessionScoreDto>(
+    dest !== null ? `/topic/session/${dest}/scoreUpdated` : null,
+    onScoreUpdated,
   );
 
   return { connected };

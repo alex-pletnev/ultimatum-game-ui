@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import type { Client } from '@stomp/stompjs';
 import { StompContext } from '../api/ws/stomp-context';
-import { OfferPhasePanel, DecisionPhasePanel } from './Session';
-import type { RoundResponse, UserResponse } from '../api/types';
+import { OfferPhasePanel, DecisionPhasePanel, RoundResultPanel } from './Session';
+import type { RoundResponse, SessionScoreDto, UserResponse } from '../api/types';
 
 function wrapWithClient(publish: ReturnType<typeof vi.fn>) {
   const client = { connected: true, publish } as unknown as Client;
@@ -196,5 +196,113 @@ describe('DecisionPhasePanel', () => {
 
     expect(screen.getByText(/Твой ответ занесён/i)).toBeInTheDocument();
     expect(screen.getByText(/Решено 1 \/ 4/i)).toBeInTheDocument();
+  });
+});
+
+describe('RoundResultPanel', () => {
+  const score: SessionScoreDto = {
+    roundSum: 100,
+    roundsCompleted: 2,
+    players: [
+      { userId: 'a', nickname: 'alice', score: 60 },
+      { userId: 'b', nickname: 'bob', score: 90 },
+    ],
+    teams: [],
+  };
+
+  it('рендерит таблицу и выделяет текущего игрока', () => {
+    render(
+      <RoundResultPanel
+        sessionId="s-1"
+        score={score}
+        currentUserId="a"
+        isAdmin={false}
+        isSessionRunning
+        isLastRound={false}
+        liveConnected
+      />,
+      { wrapper: wrapWithClient(vi.fn()) },
+    );
+
+    expect(screen.getByText(/Сыграно раундов: 2/i)).toBeInTheDocument();
+    // Оба игрока видны, alice отмечена «· ты».
+    expect(screen.getByText(/alice · ты/i)).toBeInTheDocument();
+    expect(screen.getByText(/^bob$/i)).toBeInTheDocument();
+    // Non-admin — кнопки нет.
+    expect(screen.queryByRole('button')).toBeNull();
+  });
+
+  it('ADMIN + не последний раунд — кнопка «Следующий раунд», клик публикует round.start', () => {
+    const publish = vi.fn();
+    render(
+      <RoundResultPanel
+        sessionId="s-1"
+        score={score}
+        currentUserId="a"
+        isAdmin
+        isSessionRunning
+        isLastRound={false}
+        liveConnected
+      />,
+      { wrapper: wrapWithClient(publish) },
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Следующий раунд/i }));
+
+    expect(publish).toHaveBeenCalledWith({
+      destination: '/app/session/s-1/round.start',
+      body: '',
+    });
+  });
+
+  it('ADMIN + последний раунд — лейбл «Завершить партию»', () => {
+    render(
+      <RoundResultPanel
+        sessionId="s-1"
+        score={score}
+        currentUserId="a"
+        isAdmin
+        isSessionRunning
+        isLastRound
+        liveConnected
+      />,
+      { wrapper: wrapWithClient(vi.fn()) },
+    );
+
+    expect(screen.getByRole('button', { name: /Завершить партию/i })).toBeInTheDocument();
+  });
+
+  it('session FINISHED — кнопки нет даже у ADMIN', () => {
+    render(
+      <RoundResultPanel
+        sessionId="s-1"
+        score={score}
+        currentUserId="a"
+        isAdmin
+        isSessionRunning={false}
+        isLastRound
+        liveConnected
+      />,
+      { wrapper: wrapWithClient(vi.fn()) },
+    );
+
+    expect(screen.queryByRole('button')).toBeNull();
+  });
+
+  it('score=undefined — показывает placeholder «Считаем очки…»', () => {
+    render(
+      <RoundResultPanel
+        sessionId="s-1"
+        score={undefined}
+        currentUserId="a"
+        isAdmin={false}
+        isSessionRunning
+        isLastRound={false}
+        liveConnected
+      />,
+      { wrapper: wrapWithClient(vi.fn()) },
+    );
+
+    expect(screen.getByText(/Считаем очки/i)).toBeInTheDocument();
   });
 });

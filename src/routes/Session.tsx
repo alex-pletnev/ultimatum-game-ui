@@ -4,7 +4,7 @@ import { Parchment } from '../components/Parchment';
 import { WaxSeal } from '../components/WaxSeal';
 import { useAccessToken } from '../api/auth-storage';
 import { useCurrentUser } from '../api/auth-queries';
-import { useCurrentRound, useSessionDetails } from '../api/session-queries';
+import { useCurrentRound, useSessionDetails, useSessionScore } from '../api/session-queries';
 import { useSessionLiveSync } from '../api/ws/useSessionLiveSync';
 import { useStompSend } from '../api/ws/useStompSend';
 import type {
@@ -12,6 +12,7 @@ import type {
   MakeDecisionCmd,
   RoundPhase,
   RoundResponse,
+  SessionScoreDto,
   SessionState,
   SessionWithTeamsAndMembersResponse,
   UserResponse,
@@ -235,6 +236,111 @@ export function DecisionPhasePanel({
   );
 }
 
+/**
+ * Панель финала раунда / сессии: таблица счёта + ADMIN-контрол «Следующий раунд»
+ * (или «Завершить партию» на последнем). Score приходит только через WS
+ * (`scoreUpdated`); mount после раунда без WS-события — покажет placeholder.
+ */
+export function RoundResultPanel({
+  sessionId,
+  score,
+  currentUserId,
+  isAdmin,
+  isSessionRunning,
+  isLastRound,
+  liveConnected,
+}: {
+  sessionId: string;
+  score: SessionScoreDto | undefined;
+  currentUserId: string;
+  isAdmin: boolean;
+  isSessionRunning: boolean;
+  isLastRound: boolean;
+  liveConnected: boolean;
+}) {
+  const stompSend = useStompSend();
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const submitNext = () => {
+    setError(null);
+    setSending(true);
+    try {
+      stompSend(`/app/session/${sessionId}/round.start`);
+    } catch (e) {
+      setSending(false);
+      setError(e instanceof Error ? e.message : 'Не удалось отправить команду');
+    }
+  };
+
+  const disabled = !liveConnected || sending;
+  const nextLabel = isLastRound ? 'Завершить партию' : 'Следующий раунд';
+
+  return (
+    <div className="flex w-full max-w-md flex-col gap-4">
+      <div className="flex items-center gap-3">
+        <span className="h-px flex-1 bg-brass-500/40" />
+        <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-brass-500">
+          Табло очков
+        </span>
+        <span className="h-px flex-1 bg-brass-500/40" />
+      </div>
+
+      {score === undefined ? (
+        <p className="font-body italic text-ink-900/60">
+          Считаем очки… (если mount пришёл после раунда, обнови страницу когда
+          пойдёт следующий).
+        </p>
+      ) : (
+        <>
+          <p className="text-center font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600">
+            Сыграно раундов: {score.roundsCompleted}
+          </p>
+          <ul className="flex flex-col divide-y divide-brass-500/20">
+            {[...score.players]
+              .sort((a, b) => b.score - a.score)
+              .map((p) => {
+                const isMe = p.userId === currentUserId;
+                return (
+                  <li
+                    key={p.userId}
+                    className={`flex items-center justify-between py-2 font-body ${
+                      isMe ? 'text-ember-700' : 'text-ink-900'
+                    }`}
+                  >
+                    <span className="font-display uppercase tracking-[0.14em]">
+                      {p.nickname}
+                      {isMe && ' · ты'}
+                    </span>
+                    <span className="font-display text-xl">{p.score}</span>
+                  </li>
+                );
+              })}
+          </ul>
+        </>
+      )}
+
+      {isAdmin && isSessionRunning && (
+        <>
+          <button
+            type="button"
+            onClick={submitNext}
+            disabled={disabled}
+            className="rounded-panel border border-ember-600/40 bg-ember-500 px-6 py-2 font-display text-sm uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {sending ? 'Идёт закрытие…' : nextLabel}
+          </button>
+          {error !== null && (
+            <p role="alert" className="font-body text-sm italic text-blood-600">
+              {error}
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 function MemberRow({ user, sub }: { user: UserResponse; sub?: string }) {
   return (
     <div className="flex items-center gap-3">
@@ -264,6 +370,7 @@ export function Session() {
 
   const isRunning = session?.state === 'RUNNING';
   const { data: round } = useCurrentRound(id, isRunning);
+  const { data: score } = useSessionScore(id);
 
   if (token === null) return <Navigate to="/" replace />;
 
@@ -443,7 +550,34 @@ export function Session() {
                   />
                 </>
               )}
+              {(round.roundPhase === 'ALL_DECISIONS_RECEIVED' ||
+                round.roundPhase === 'FINISHED') && (
+                <>
+                  <span className="h-px w-16 bg-brass-500/60" />
+                  <RoundResultPanel
+                    sessionId={session.id}
+                    score={score}
+                    currentUserId={user.id}
+                    isAdmin={myRole === 'ведущий'}
+                    isSessionRunning={session.state === 'RUNNING'}
+                    isLastRound={round.roundNumber >= session.config.numRounds}
+                    liveConnected={liveConnected}
+                  />
+                </>
+              )}
             </>
+          )}
+
+          {session.state === 'FINISHED' && (
+            <RoundResultPanel
+              sessionId={session.id}
+              score={score}
+              currentUserId={user.id}
+              isAdmin={myRole === 'ведущий'}
+              isSessionRunning={false}
+              isLastRound
+              liveConnected={liveConnected}
+            />
           )}
 
           {session.state === 'CREATED' && myRole === 'ведущий' && (
@@ -486,11 +620,9 @@ export function Session() {
             </p>
           )}
 
-          {(session.state === 'FINISHED' || session.state === 'ABORTED') && (
+          {session.state === 'ABORTED' && (
             <p className="font-body italic text-ink-900/70">
-              {session.state === 'FINISHED'
-                ? 'Партия сыграна. Итоги — на табло очков (когда появится, T-014+).'
-                : 'Партию пришлось прервать раньше срока.'}
+              Партию пришлось прервать раньше срока.
             </p>
           )}
         </div>
