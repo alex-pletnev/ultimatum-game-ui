@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
+import { apiFetchText } from '../api/client';
 import {
   Bar,
   BarChart,
@@ -367,6 +368,83 @@ function RawTable({ rows }: { rows: StatsRow[] }) {
   );
 }
 
+/**
+ * Транслитерация + очистка имени партии в filename-safe строку.
+ * Латиница + цифры + `-` — гарантированно откроется в любой ОС.
+ */
+function toSlug(input: string): string {
+  const table: Record<string, string> = {
+    а:'a',б:'b',в:'v',г:'g',д:'d',е:'e',ё:'e',ж:'zh',з:'z',и:'i',й:'i',
+    к:'k',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ф:'f',
+    х:'h',ц:'ts',ч:'ch',ш:'sh',щ:'sch',ъ:'',ы:'y',ь:'',э:'e',ю:'yu',я:'ya',
+  };
+  return input
+    .toLowerCase()
+    .split('')
+    .map((c) => table[c] ?? c)
+    .join('')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40) || 'session';
+}
+
+function ExportButton({
+  sessionId,
+  displayName,
+  disabled,
+}: {
+  sessionId: string;
+  displayName: string;
+  disabled: boolean;
+}) {
+  const [pending, setPending] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const download = async () => {
+    setErr(null);
+    setPending(true);
+    try {
+      const csv = await apiFetchText(
+        `/statistics/${encodeURIComponent(sessionId)}/csv`,
+        { withAuth: false },
+      );
+      // BOM для Excel'я — без него ру-ники в UTF-8 показываются как крякозябры.
+      const blob = new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ultimatum-${toSlug(displayName)}-${sessionId.slice(0, 8)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Не удалось выгрузить');
+    } finally {
+      setPending(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <button
+        type="button"
+        onClick={() => void download()}
+        disabled={disabled || pending}
+        className="rounded-panel border border-brass-500/40 bg-transparent px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.3em] text-parchment-300/80 transition hover:border-ember-500 hover:text-ember-400 disabled:cursor-not-allowed disabled:opacity-40"
+        title="Скачать CSV с летописью сделок"
+      >
+        {pending ? 'выгружаем…' : '↓ выгрузить свиток (csv)'}
+      </button>
+      {err !== null && (
+        <span role="alert" className="font-body text-[11px] italic text-blood-500">
+          {err}
+        </span>
+      )}
+    </div>
+  );
+}
+
 /* ────────────────────  Main page  ──────────────────── */
 
 export function Stats() {
@@ -411,7 +489,14 @@ export function Stats() {
             {session?.displayName ?? 'Партия'}
           </h1>
         </div>
-        <div className="flex flex-col items-end gap-1">
+        <div className="flex flex-col items-end gap-2">
+          {id !== undefined && (
+            <ExportButton
+              sessionId={id}
+              displayName={session?.displayName ?? 'session'}
+              disabled={!hasData}
+            />
+          )}
           {id !== undefined && (
             <Link
               to={`/session/${id}`}
