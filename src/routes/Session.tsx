@@ -204,7 +204,12 @@ export function DecisionPhasePanel({
         {offer.proposer.nickname} предлагает разделить ставку:
       </p>
       <div className="flex flex-col items-center gap-1">
-        <span className="font-display text-3xl text-ink-950">{offer.offerValue}</span>
+        <span
+          data-testid="assigned-offer-amount"
+          className="font-display text-3xl text-ink-950"
+        >
+          {offer.offerValue}
+        </span>
         <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600">
           тебе · ему остаётся {roundSum - offer.offerValue}
         </span>
