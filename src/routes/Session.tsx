@@ -8,7 +8,9 @@ import { useCurrentRound, useSessionDetails } from '../api/session-queries';
 import { useSessionLiveSync } from '../api/ws/useSessionLiveSync';
 import { useStompSend } from '../api/ws/useStompSend';
 import type {
+  CreateOfferCmd,
   RoundPhase,
+  RoundResponse,
   SessionState,
   SessionWithTeamsAndMembersResponse,
   UserResponse,
@@ -39,6 +41,100 @@ function myRoleAtTable(
   if (session.members.some((m) => m.id === user.id)) return 'играющий';
   if (session.observers.some((o) => o.id === user.id)) return 'наблюдатель';
   return 'зашедший';
+}
+
+/**
+ * Панель WAIT_OFFERS: если player ещё не сделал оффер — слайдер + submit;
+ * если сделал — waiting-текст с progress по остальным.
+ * Показывается только когда myRole !== NONE (admin-observer не участвует).
+ */
+function OfferPhasePanel({
+  sessionId,
+  round,
+  roundSum,
+  playersCount,
+  liveConnected,
+}: {
+  sessionId: string;
+  round: RoundResponse;
+  roundSum: number;
+  playersCount: number;
+  liveConnected: boolean;
+}) {
+  const stompSend = useStompSend();
+  const [amount, setAmount] = useState<number>(Math.floor(roundSum / 2));
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const needsToSendOffer = round.myPendingActions.some((a) => a.type === 'SEND_OFFER');
+
+  if (!needsToSendOffer) {
+    return (
+      <>
+        <p className="font-body italic text-ink-900/80">
+          Твоё предложение занесено в книгу.
+        </p>
+        <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600">
+          Собрано {round.offers.length} / {playersCount}
+        </p>
+      </>
+    );
+  }
+
+  const submit = () => {
+    setError(null);
+    setSending(true);
+    try {
+      const body: CreateOfferCmd = { amount };
+      stompSend(`/app/session/${sessionId}/offer.create`, body);
+      // Ставим оптимистический lock до invalidate'а; успешный broadcast снимет
+      // SEND_OFFER из myPendingActions и переключит панель на waiting-режим.
+    } catch (e) {
+      setSending(false);
+      setError(e instanceof Error ? e.message : 'Не удалось отправить предложение');
+    }
+  };
+
+  const disabled = !liveConnected || sending;
+
+  return (
+    <div className="flex w-full max-w-md flex-col gap-4">
+      <p className="font-body text-base italic text-ink-900/80">
+        Раздели ставку {roundSum}: сколько монет предложить второй стороне?
+      </p>
+      <div className="flex flex-col items-center gap-2">
+        <span className="font-display text-3xl text-ink-950">{amount}</span>
+        <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600">
+          из {roundSum} · тебе останется {roundSum - amount}
+        </span>
+      </div>
+      <input
+        type="range"
+        min={0}
+        max={roundSum}
+        step={1}
+        value={amount}
+        onChange={(e) => setAmount(Number(e.target.value))}
+        disabled={disabled}
+        aria-label="Сумма предложения"
+        className="w-full accent-ember-500 disabled:opacity-50"
+      />
+      <button
+        type="button"
+        onClick={submit}
+        disabled={disabled}
+        className="rounded-panel border border-ember-600/40 bg-ember-500 px-6 py-2 font-display text-sm uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50"
+        title={liveConnected ? '' : 'ждём подключение к живой ленте'}
+      >
+        {sending ? 'Отправляем…' : 'Огласить сделку'}
+      </button>
+      {error !== null && (
+        <p role="alert" className="font-body text-sm italic text-blood-600">
+          {error}
+        </p>
+      )}
+    </div>
+  );
 }
 
 function MemberRow({ user, sub }: { user: UserResponse; sub?: string }) {
@@ -224,6 +320,18 @@ export function Session() {
                 <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-brass-600">
                   Твоя роль в раунде: {round.myRole === 'BOTH' ? 'proposer + responder' : round.myRole.toLowerCase()}
                 </p>
+              )}
+              {round.roundPhase === 'WAIT_OFFERS' && round.myRole !== 'NONE' && (
+                <>
+                  <span className="h-px w-16 bg-brass-500/60" />
+                  <OfferPhasePanel
+                    sessionId={session.id}
+                    round={round}
+                    roundSum={session.config.roundSum}
+                    playersCount={playerList.length}
+                    liveConnected={liveConnected}
+                  />
+                </>
               )}
             </>
           )}

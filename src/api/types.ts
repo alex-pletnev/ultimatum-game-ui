@@ -165,6 +165,25 @@ export type RoundResponse = {
   myPendingActions: PendingAction[];
 };
 
+/* ────────────────────  STOMP-команды (SEND payloads)  ─────────────────────── */
+
+/** Payload `/app/session/{id}/offer.create`. `amount ∈ [0, roundSum]`. */
+export type CreateOfferCmd = {
+  amount: number;
+};
+
+/* ────────────────────  WS-события (payloads)  ─────────────────────────────── */
+
+/** Payload `/topic/session/{id}/offerCreated`. Broadcast каждого нового оффера. */
+export type OfferCreatedResponse = {
+  id: string;
+  round: RoundPrewResponse;
+  proposer: UserResponse;
+  responder: UserResponse | null;
+  offerValue: number;
+  createdAt: string;
+};
+
 /** Spring Data Page — минимальный набор полей, которые фронту нужны. */
 export type Page<T> = {
   content: T[];
