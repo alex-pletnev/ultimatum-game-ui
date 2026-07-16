@@ -19,12 +19,20 @@ function LobbyHeader({ canCreate }: { canCreate: boolean }) {
       </div>
       <div className="flex flex-col items-end gap-3">
         {canCreate && (
-          <Link
-            to="/lobby/new"
-            className="rounded-panel border border-ember-600/40 bg-ember-500 px-5 py-2 font-display text-xs uppercase tracking-[0.24em] text-night-950 shadow-[0_3px_0_var(--color-ember-700)] transition hover:translate-y-[-1px]"
-          >
-            Учредить партию
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/npc"
+              className="font-mono text-[10px] uppercase tracking-[0.3em] text-parchment-300/60 hover:text-ember-400"
+            >
+              → отряд ботов
+            </Link>
+            <Link
+              to="/lobby/new"
+              className="rounded-panel border border-ember-600/40 bg-ember-500 px-5 py-2 font-display text-xs uppercase tracking-[0.24em] text-night-950 shadow-[0_3px_0_var(--color-ember-700)] transition hover:translate-y-[-1px]"
+            >
+              Учредить партию
+            </Link>
+          </div>
         )}
         <Link
           to="/"

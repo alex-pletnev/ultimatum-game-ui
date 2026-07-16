@@ -63,6 +63,7 @@ export type SessionConfigRequest = {
   numPlayers: number;
   roundSum: number;
   timeoutMoveSec: number;
+  autoAdvanceRounds?: boolean;
 };
 
 export type CreateSessionRequest = {
@@ -80,6 +81,7 @@ export type SessionConfigResponse = {
   numPlayers: number;
   roundSum: number;
   timeoutMoveSec: number;
+  autoAdvanceRounds?: boolean;
 };
 
 export type RoundPrewResponse = {
@@ -234,6 +236,70 @@ export type Page<T> = {
   totalPages: number;
   number: number;
   size: number;
+};
+
+/* ────────────────────  NPC  ─────────────────────
+ * Спека: frontend-integration/10-npc.md. NPC — обычный User(role=NPC) +
+ * NpcProfile со стратегией и её параметрами (sealed по `type`).
+ */
+
+export type NpcStrategy = 'FAIR' | 'SELFISH' | 'RANDOM' | 'VENGEFUL' | 'ADAPTIVE';
+
+export type NpcParamsFair = { type: 'FAIR'; fairnessThreshold?: number };
+export type NpcParamsSelfish = { type: 'SELFISH'; minOffer?: number };
+export type NpcParamsRandom = { type: 'RANDOM'; acceptProbability?: number };
+export type NpcParamsVengeful = {
+  type: 'VENGEFUL';
+  baselineFraction?: number;
+  punishStep?: number;
+  fairnessThreshold?: number;
+};
+export type NpcParamsAdaptive = {
+  type: 'ADAPTIVE';
+  baselineFraction?: number;
+  targetRejectRate?: number;
+  slope?: number;
+};
+
+export type NpcParams =
+  | NpcParamsFair
+  | NpcParamsSelfish
+  | NpcParamsRandom
+  | NpcParamsVengeful
+  | NpcParamsAdaptive;
+
+export type NpcProfileResponse = {
+  id: string;
+  userId: string;
+  nickname: string;
+  strategy: NpcStrategy;
+  params: NpcParams;
+  seed: number | null;
+  createdAt: string;
+};
+
+export type CreateNpcRequest = {
+  nickname: string;
+  strategy: NpcStrategy;
+  params: NpcParams;
+  seed?: number | null;
+};
+
+export type BulkNpcsRequest = {
+  count: number;
+  strategy: NpcStrategy;
+  params: NpcParams;
+  seedBase?: number | null;
+};
+
+export type BulkNpcsResponse = {
+  session: SessionWithTeamsAndMembersResponse;
+  npcs: NpcProfileResponse[];
+};
+
+export type JoinNpcRequest = {
+  npcId: string;
+  teamId?: string | null;
 };
 
 /* ────────────────────  Errors  ─────────────────── */

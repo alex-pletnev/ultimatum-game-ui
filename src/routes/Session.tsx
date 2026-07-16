@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router';
+import { AddNpcPanel } from '../components/AddNpcPanel';
 import { Parchment } from '../components/Parchment';
 import { WaxSeal } from '../components/WaxSeal';
 import { useAccessToken } from '../api/auth-storage';
@@ -663,6 +664,11 @@ export function Session() {
               <p className="font-body italic text-ink-900/70">
                 Как только все займут места — можно объявлять начало.
               </p>
+              {session.config.autoAdvanceRounds === true && (
+                <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600">
+                  Автопрогон раундов включён
+                </p>
+              )}
               <button
                 type="button"
                 disabled={!liveConnected}
@@ -686,6 +692,7 @@ export function Session() {
                   {sendError}
                 </p>
               )}
+              <AddNpcPanel session={session} />
             </>
           )}
 

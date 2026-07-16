@@ -44,6 +44,7 @@ export function CreateSession() {
   const [numPlayers, setNumPlayers] = useState(4);
   const [numTeams, setNumTeams] = useState(2);
   const [roundSum, setRoundSum] = useState(100);
+  const [autoAdvanceRounds, setAutoAdvanceRounds] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
   const create = useCreateSession();
@@ -72,6 +73,7 @@ export function CreateSession() {
           numPlayers,
           roundSum,
           timeoutMoveSec: TIMEOUT_MOVE_SEC_DEFAULT,
+          autoAdvanceRounds,
         },
       },
       { onSuccess: () => navigate('/lobby') },
@@ -164,6 +166,30 @@ export function CreateSession() {
               hint="Раздел этой суммы обсуждается за столом"
             />
           </div>
+
+          <label
+            className={`flex cursor-pointer items-start gap-3 rounded-card border px-4 py-3 transition ${
+              autoAdvanceRounds
+                ? 'border-ember-600 bg-parchment-200/60'
+                : 'border-brass-500/40 hover:border-brass-500 hover:bg-parchment-200/30'
+            }`}
+          >
+            <input
+              type="checkbox"
+              checked={autoAdvanceRounds}
+              onChange={(e) => setAutoAdvanceRounds(e.target.checked)}
+              className="mt-1 h-4 w-4 accent-ember-500"
+            />
+            <span className="flex flex-col gap-1">
+              <span className="font-display text-sm uppercase tracking-[0.16em] text-ink-950">
+                Автопрогон раундов
+              </span>
+              <span className="font-body text-xs italic text-ink-900/70">
+                Сервер сам продолжит партию, как только все решения приняты.
+                Полезно, если за столом одни боты.
+              </span>
+            </span>
+          </label>
 
           {err !== null && (
             <div
