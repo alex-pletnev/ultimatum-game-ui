@@ -172,6 +172,12 @@ export type CreateOfferCmd = {
   amount: number;
 };
 
+/** Payload `/app/session/{id}/make.decision`. */
+export type MakeDecisionCmd = {
+  offerId: string;
+  decision: boolean;
+};
+
 /* ────────────────────  WS-события (payloads)  ─────────────────────────────── */
 
 /** Payload `/topic/session/{id}/offerCreated`. Broadcast каждого нового оффера. */
@@ -182,6 +188,23 @@ export type OfferCreatedResponse = {
   responder: UserResponse | null;
   offerValue: number;
   createdAt: string;
+};
+
+/** Payload `/topic/session/{id}/decisionMade`. Broadcast каждого решения. */
+export type DecisionMadeResponse = {
+  id: string;
+  round: RoundPrewResponse;
+  responder: UserResponse;
+  offer: OfferCreatedResponse;
+  decision: boolean;
+  createdAt: string;
+};
+
+/** Payload `/topic/session/{id}/offersShuffled`. Broadcast перехода в OFFERS_SENT. */
+export type OffersShuffledResponse = {
+  roundId: string;
+  roundNumber: number;
+  pairs: Array<{ offerId: string; proposerId: string; responderId: string }>;
 };
 
 /** Spring Data Page — минимальный набор полей, которые фронту нужны. */

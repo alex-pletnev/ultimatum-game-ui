@@ -9,6 +9,7 @@ import { useSessionLiveSync } from '../api/ws/useSessionLiveSync';
 import { useStompSend } from '../api/ws/useStompSend';
 import type {
   CreateOfferCmd,
+  MakeDecisionCmd,
   RoundPhase,
   RoundResponse,
   SessionState,
@@ -48,7 +49,7 @@ function myRoleAtTable(
  * если сделал — waiting-текст с progress по остальным.
  * Показывается только когда myRole !== NONE (admin-observer не участвует).
  */
-function OfferPhasePanel({
+export function OfferPhasePanel({
   sessionId,
   round,
   roundSum,
@@ -128,6 +129,103 @@ function OfferPhasePanel({
       >
         {sending ? 'Отправляем…' : 'Огласить сделку'}
       </button>
+      {error !== null && (
+        <p role="alert" className="font-body text-sm italic text-blood-600">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Панель OFFERS_SENT: если есть pending MAKE_DECISION — карточка оффера
+ * (сумма + имя proposer'а) + кнопки accept/reject. Если решение уже принято —
+ * waiting-текст с progress по остальным.
+ * Показывается только когда myRole !== NONE.
+ */
+export function DecisionPhasePanel({
+  sessionId,
+  round,
+  roundSum,
+  playersCount,
+  liveConnected,
+}: {
+  sessionId: string;
+  round: RoundResponse;
+  roundSum: number;
+  playersCount: number;
+  liveConnected: boolean;
+}) {
+  const stompSend = useStompSend();
+  const [sending, setSending] = useState<'accept' | 'reject' | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const decisionAction = round.myPendingActions.find((a) => a.type === 'MAKE_DECISION');
+
+  if (decisionAction === undefined || decisionAction.offerId === undefined) {
+    return (
+      <>
+        <p className="font-body italic text-ink-900/80">Твой ответ занесён.</p>
+        <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600">
+          Решено {round.decisions.length} / {playersCount}
+        </p>
+      </>
+    );
+  }
+
+  const offer = round.offers.find((o) => o.id === decisionAction.offerId);
+  if (offer === undefined) {
+    return (
+      <p className="font-body text-sm italic text-blood-600">
+        Оффер {decisionAction.offerId} не найден в раунде.
+      </p>
+    );
+  }
+
+  const submit = (decision: boolean) => {
+    setError(null);
+    setSending(decision ? 'accept' : 'reject');
+    try {
+      const body: MakeDecisionCmd = { offerId: offer.id, decision };
+      stompSend(`/app/session/${sessionId}/make.decision`, body);
+    } catch (e) {
+      setSending(null);
+      setError(e instanceof Error ? e.message : 'Не удалось отправить решение');
+    }
+  };
+
+  const disabled = !liveConnected || sending !== null;
+
+  return (
+    <div className="flex w-full max-w-md flex-col gap-4">
+      <p className="font-body italic text-ink-900/80">
+        {offer.proposer.nickname} предлагает разделить ставку:
+      </p>
+      <div className="flex flex-col items-center gap-1">
+        <span className="font-display text-3xl text-ink-950">{offer.offerValue}</span>
+        <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600">
+          тебе · ему остаётся {roundSum - offer.offerValue}
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          type="button"
+          onClick={() => submit(true)}
+          disabled={disabled}
+          className="rounded-panel border border-verdigris-600/40 bg-verdigris-500/90 px-4 py-2 font-display text-sm uppercase tracking-[0.2em] text-parchment-100 shadow-[0_4px_0_var(--color-verdigris-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {sending === 'accept' ? 'Скрепляем…' : 'Согласиться'}
+        </button>
+        <button
+          type="button"
+          onClick={() => submit(false)}
+          disabled={disabled}
+          className="rounded-panel border border-blood-600/40 bg-blood-500/90 px-4 py-2 font-display text-sm uppercase tracking-[0.2em] text-parchment-100 shadow-[0_4px_0_var(--color-blood-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {sending === 'reject' ? 'Разбиваем…' : 'Разбить сделку'}
+        </button>
+      </div>
       {error !== null && (
         <p role="alert" className="font-body text-sm italic text-blood-600">
           {error}
@@ -325,6 +423,18 @@ export function Session() {
                 <>
                   <span className="h-px w-16 bg-brass-500/60" />
                   <OfferPhasePanel
+                    sessionId={session.id}
+                    round={round}
+                    roundSum={session.config.roundSum}
+                    playersCount={playerList.length}
+                    liveConnected={liveConnected}
+                  />
+                </>
+              )}
+              {round.roundPhase === 'OFFERS_SENT' && round.myRole !== 'NONE' && (
+                <>
+                  <span className="h-px w-16 bg-brass-500/60" />
+                  <DecisionPhasePanel
                     sessionId={session.id}
                     round={round}
                     roundSum={session.config.roundSum}

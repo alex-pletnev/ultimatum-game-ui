@@ -4,7 +4,9 @@ import { sessionKeys } from '../session-queries';
 import { useTopicSubscription } from './useTopicSubscription';
 import { useStompConnected } from './stomp-context';
 import type {
+  DecisionMadeResponse,
   OfferCreatedResponse,
+  OffersShuffledResponse,
   RoundResponse,
   SessionWithTeamsAndMembersResponse,
 } from '../types';
@@ -49,9 +51,10 @@ export function useSessionLiveSync(id: string | undefined): { connected: boolean
     [qc, id],
   );
 
-  // Прилёт нового оффера: инвалидируем currentRound, чтобы обновились offers.length
-  // и myPendingActions (backend уберёт SEND_OFFER после нашего собственного оффера).
-  const onOfferCreated = useCallback(() => {
+  // Любое per-round событие (offerCreated / decisionMade / offersShuffled) —
+  // инвалидируем currentRound, чтобы REST-refetch подтянул свежие
+  // offers/decisions/myPendingActions/responder-shuffle.
+  const invalidateRound = useCallback(() => {
     if (id === undefined) return;
     void qc.invalidateQueries({ queryKey: sessionKeys.currentRound(id) });
   }, [qc, id]);
@@ -70,7 +73,17 @@ export function useSessionLiveSync(id: string | undefined): { connected: boolean
 
   useTopicSubscription<OfferCreatedResponse>(
     dest !== null ? `/topic/session/${dest}/offerCreated` : null,
-    onOfferCreated,
+    invalidateRound,
+  );
+
+  useTopicSubscription<OffersShuffledResponse>(
+    dest !== null ? `/topic/session/${dest}/offersShuffled` : null,
+    invalidateRound,
+  );
+
+  useTopicSubscription<DecisionMadeResponse>(
+    dest !== null ? `/topic/session/${dest}/decisionMade` : null,
+    invalidateRound,
   );
 
   return { connected };
