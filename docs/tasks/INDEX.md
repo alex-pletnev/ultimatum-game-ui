@@ -22,6 +22,7 @@
 | T-019 | Round abort + мелкая полировка Session-панели | done | 2026-07-16 | [T-019-round-abort-and-polish.md](T-019-round-abort-and-polish.md) |
 | T-020 | Страница статистики — сырые + агрегированные + графики | done | 2026-07-16 | [T-020-statistics-page.md](T-020-statistics-page.md) |
 | T-021 | NPC — CRUD + attach в сессию + autoAdvanceRounds | done | 2026-07-16 | [T-021-npc-frontend.md](T-021-npc-frontend.md) |
+| T-022 | Анимации — ансамбль (solemn scenes + playful ambient) | done | 2026-07-16 | [T-022-animations-ensemble.md](T-022-animations-ensemble.md) |
 | T-001 | Изучить frontend-integration/, заполнить API-контракт | done | 2026-07-15 | [T-001-fetch-and-document-api.md](T-001-fetch-and-document-api.md) |
 | T-002 | Vite+React+TS scaffolding, Tailwind, tooling | done | 2026-07-15 | [T-002-scaffold-vite-react-tailwind.md](T-002-scaffold-vite-react-tailwind.md) |
 | T-003 | Design tokens: фэнтези-настолка + Claude-brand | done | 2026-07-15 | [T-003-design-tokens-claude-brand.md](T-003-design-tokens-claude-brand.md) |

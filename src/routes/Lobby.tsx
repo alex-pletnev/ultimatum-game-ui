@@ -31,7 +31,7 @@ function LobbyHeader({ canCreate }: { canCreate: boolean }) {
             </Link>
             <Link
               to="/lobby/new"
-              className="rounded-panel border border-ember-600/40 bg-ember-500 px-5 py-2 font-display text-xs uppercase tracking-[0.24em] text-night-950 shadow-[0_3px_0_var(--color-ember-700)] transition hover:translate-y-[-1px]"
+              className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile px-5 py-2 font-display text-xs uppercase tracking-[0.24em] text-night-950 shadow-[0_3px_0_var(--color-ember-700)] transition hover:translate-y-[-1px]"
             >
               Учредить партию
             </Link>
@@ -89,7 +89,7 @@ function ErrorState({ retry }: { retry: () => void }) {
         <button
           type="button"
           onClick={retry}
-          className="rounded-panel border border-ember-600/40 bg-ember-500 px-6 py-2 font-display text-xs uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px]"
+          className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile px-6 py-2 font-display text-xs uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px]"
         >
           Постучать снова
         </button>

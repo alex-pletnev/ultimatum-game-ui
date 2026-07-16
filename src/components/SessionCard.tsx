@@ -61,8 +61,10 @@ export function SessionCard({ session, currentUser }: Props) {
           },
         };
 
+  // Тактильный отклик карточки в лобби: при наведении лёгкий подъём + shadow up.
+  // Idle-wobble сознательно не добавляем — в сетке из 8 карт становится тошнотворно.
   return (
-    <Parchment className="flex flex-col gap-5">
+    <Parchment className="flex flex-col gap-5 transition-transform duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_16px_36px_-14px_rgba(60,20,10,0.7)]">
       <div className="flex items-start gap-4">
         <WaxSeal size={56} monogram={initial} />
         <div className="flex flex-col">
@@ -106,7 +108,7 @@ export function SessionCard({ session, currentUser }: Props) {
       {cta.kind === 'own' && (
         <Link
           to={cta.href}
-          className="rounded-panel border border-ember-600/40 bg-ember-500 px-6 py-2 text-center font-display text-xs uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px]"
+          className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile px-6 py-2 text-center font-display text-xs uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px]"
         >
           Перейти к столу
         </Link>
@@ -129,7 +131,7 @@ export function SessionCard({ session, currentUser }: Props) {
             type="button"
             onClick={cta.onClick}
             disabled={cta.isPending}
-            className="rounded-panel border border-ember-600/40 bg-ember-500 px-6 py-2 font-display text-xs uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-wait disabled:opacity-60"
+            className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile px-6 py-2 font-display text-xs uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-wait disabled:opacity-60"
           >
             {cta.isPending ? 'занимаем место…' : 'Заявиться в партию'}
           </button>

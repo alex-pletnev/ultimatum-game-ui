@@ -1,6 +1,12 @@
+import { motion, useReducedMotion } from 'motion/react';
+import { easeSolemn } from '../lib/motion';
+
 /*
  * Восковая печать — центральный акцент титульной карточки и разделов.
  * SVG, чтобы масштабировалось и красилось через currentColor.
+ *
+ * Motion: при mount печать «садится» — стартует чуть повёрнутая и уменьшенная,
+ * доворачивается на место (~450ms, ease-solemn). Reduced-motion → только fade.
  */
 type Props = {
   size?: number;
@@ -9,8 +15,22 @@ type Props = {
 };
 
 export function WaxSeal({ size = 88, monogram = 'U', className }: Props) {
+  const reduce = useReducedMotion();
+  const initial = reduce
+    ? { opacity: 0 }
+    : { opacity: 0, rotate: -8, scale: 0.85 };
+  const animate = reduce
+    ? { opacity: 1 }
+    : { opacity: 1, rotate: 0, scale: 1 };
+  const transition = reduce
+    ? { duration: 0.2 }
+    : { duration: 0.45, ease: easeSolemn };
+
   return (
-    <svg
+    <motion.svg
+      initial={initial}
+      animate={animate}
+      transition={transition}
       viewBox="0 0 100 100"
       width={size}
       height={size}
@@ -107,6 +127,6 @@ export function WaxSeal({ size = 88, monogram = 'U', className }: Props) {
       >
         {monogram}
       </text>
-    </svg>
+    </motion.svg>
   );
 }

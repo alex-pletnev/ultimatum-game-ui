@@ -1,15 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Route, Routes } from 'react-router';
+import { BrowserRouter } from 'react-router';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { App } from './App';
-import { CreateSession } from './routes/CreateSession';
-import { Lobby } from './routes/Lobby';
-import { Npc } from './routes/Npc';
-import { Register } from './routes/Register';
-import { Session } from './routes/Session';
-import { Stats } from './routes/Stats';
-import { StyleGuide } from './routes/StyleGuide';
+import { AnimatedRoutes } from './AnimatedRoutes';
 import { createQueryClient } from './api/query-client';
 import { StompProvider } from './api/ws/StompProvider';
 import './index.css';
@@ -24,16 +17,7 @@ createRoot(rootElement).render(
     <QueryClientProvider client={queryClient}>
       <StompProvider>
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<App />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/lobby" element={<Lobby />} />
-            <Route path="/lobby/new" element={<CreateSession />} />
-            <Route path="/npc" element={<Npc />} />
-            <Route path="/session/:id" element={<Session />} />
-            <Route path="/session/:id/stats" element={<Stats />} />
-            <Route path="/_style-guide" element={<StyleGuide />} />
-          </Routes>
+          <AnimatedRoutes />
         </BrowserRouter>
       </StompProvider>
     </QueryClientProvider>

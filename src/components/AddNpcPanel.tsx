@@ -201,7 +201,7 @@ export function AddNpcPanel({
                 type="button"
                 onClick={submitExisting}
                 disabled={selectedNpcId.length === 0 || join.isPending}
-                className="rounded-panel border border-ember-600/40 bg-ember-500 px-4 py-2 font-display text-sm uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile px-4 py-2 font-display text-sm uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {join.isPending ? 'сажаем…' : 'Позвать'}
               </button>
@@ -272,7 +272,7 @@ export function AddNpcPanel({
             type="button"
             onClick={submitBulk}
             disabled={bulk.isPending || bulkCount < 1 || bulkCount > slotsLeft}
-            className="rounded-panel border border-ember-600/40 bg-ember-500 px-4 py-2 font-display text-sm uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile px-4 py-2 font-display text-sm uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {bulk.isPending ? 'куём…' : `Наковать ${bulkCount}`}
           </button>

@@ -1,8 +1,18 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { AddNpcPanel } from '../components/AddNpcPanel';
 import { Parchment } from '../components/Parchment';
 import { WaxSeal } from '../components/WaxSeal';
+import {
+  easeSolemn,
+  offerCardDrop,
+  scoreListStagger,
+  scoreRowEnter,
+  stampSettle,
+  tearLeft,
+  tearRight,
+} from '../lib/motion';
 import { useAccessToken } from '../api/auth-storage';
 import { useCurrentUser } from '../api/auth-queries';
 import { useCurrentRound, useSessionDetails, useSessionScore } from '../api/session-queries';
@@ -126,7 +136,7 @@ export function OfferPhasePanel({
         type="button"
         onClick={submit}
         disabled={disabled}
-        className="rounded-panel border border-ember-600/40 bg-ember-500 px-6 py-2 font-display text-sm uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50"
+        className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile px-6 py-2 font-display text-sm uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50"
         title={liveConnected ? '' : 'ждём подключение к живой ленте'}
       >
         {sending ? 'Отправляем…' : 'Огласить сделку'}
@@ -198,29 +208,56 @@ export function DecisionPhasePanel({
   };
 
   const disabled = !liveConnected || sending !== null;
+  const reveal = sending; // Финальная фаза сцены — используем sending как триггер визуала.
 
   return (
     <div className="flex w-full max-w-md flex-col gap-4">
       <p className="font-body italic text-ink-900/80">
         {offer.proposer.nickname} предлагает разделить ставку:
       </p>
-      <div className="flex flex-col items-center gap-1">
-        <span
-          data-testid="assigned-offer-amount"
-          className="font-display text-3xl text-ink-950"
-        >
-          {offer.offerValue}
-        </span>
-        <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600">
-          тебе · ему остаётся {roundSum - offer.offerValue}
-        </span>
+
+      {/* Сцена A: карточка оффера опускается сверху, сумма садится штампом.
+          Сцена B (reject): карточка «рвётся» пополам через две clip-path половины. */}
+      <div className="relative flex flex-col items-center gap-1 py-2">
+        {reveal === 'reject' ? (
+          <RejectTearOverlay
+            amount={offer.offerValue}
+            remaining={roundSum - offer.offerValue}
+          />
+        ) : (
+          <OfferCardVisual
+            amount={offer.offerValue}
+            remaining={roundSum - offer.offerValue}
+            dimmed={reveal === 'accept'}
+          />
+        )}
+
+        {/* Сцена B (accept): восковая печать накрывает карту. */}
+        <AnimatePresence>
+          {reveal === 'accept' && (
+            <motion.div
+              key="accept-stamp"
+              initial={{ opacity: 0, scale: 0.4, rotate: -18 }}
+              animate={{
+                opacity: [0, 1, 1],
+                scale: [0.4, 1.15, 1],
+                rotate: [-18, -4, 0],
+                transition: { duration: 0.42, ease: easeSolemn, times: [0, 0.55, 1] },
+              }}
+              className="pointer-events-none absolute inset-0 flex items-center justify-center"
+            >
+              <WaxSeal size={110} monogram="✓" />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
+
       <div className="grid grid-cols-2 gap-3">
         <button
           type="button"
           onClick={() => submit(true)}
           disabled={disabled}
-          className="rounded-panel border border-verdigris-600/40 bg-verdigris-500/90 px-4 py-2 font-display text-sm uppercase tracking-[0.2em] text-parchment-100 shadow-[0_4px_0_var(--color-verdigris-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50"
+          className="press-tactile rounded-panel border border-verdigris-600/40 bg-verdigris-500/90 px-4 py-2 font-display text-sm uppercase tracking-[0.2em] text-parchment-100 shadow-[0_4px_0_var(--color-verdigris-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {sending === 'accept' ? 'Скрепляем…' : 'Согласиться'}
         </button>
@@ -228,7 +265,7 @@ export function DecisionPhasePanel({
           type="button"
           onClick={() => submit(false)}
           disabled={disabled}
-          className="rounded-panel border border-blood-600/40 bg-blood-500/90 px-4 py-2 font-display text-sm uppercase tracking-[0.2em] text-parchment-100 shadow-[0_4px_0_var(--color-blood-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50"
+          className="press-tactile rounded-panel border border-blood-600/40 bg-blood-500/90 px-4 py-2 font-display text-sm uppercase tracking-[0.2em] text-parchment-100 shadow-[0_4px_0_var(--color-blood-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {sending === 'reject' ? 'Разбиваем…' : 'Разбить сделку'}
         </button>
@@ -238,6 +275,100 @@ export function DecisionPhasePanel({
           {error}
         </p>
       )}
+    </div>
+  );
+}
+
+/**
+ * Сцена A: карта-оффер опускается сверху (~600ms), сумма садится штампом
+ * (задержка 200ms + scale/rotate settle). `dimmed=true` — карта уходит в
+ * тень поверх неё будет appear'ена печать accept.
+ */
+function OfferCardVisual({
+  amount,
+  remaining,
+  dimmed,
+}: {
+  amount: number;
+  remaining: number;
+  dimmed: boolean;
+}) {
+  return (
+    <motion.div
+      variants={offerCardDrop}
+      initial="hidden"
+      animate={dimmed ? { opacity: 0.35, filter: 'grayscale(0.4)' } : 'visible'}
+      transition={{ duration: 0.4, ease: easeSolemn }}
+      className="flex flex-col items-center gap-1"
+    >
+      <motion.span
+        variants={stampSettle}
+        initial="hidden"
+        animate="visible"
+        data-testid="assigned-offer-amount"
+        className="font-display text-3xl text-ink-950"
+      >
+        {amount}
+      </motion.span>
+      <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600">
+        тебе · ему остаётся {remaining}
+      </span>
+    </motion.div>
+  );
+}
+
+/**
+ * Сцена B (reject): визуально «разрываем» карточку.
+ * Две clip-path половины уезжают в стороны, между ними красный проблеск.
+ */
+function RejectTearOverlay({
+  amount,
+  remaining,
+}: {
+  amount: number;
+  remaining: number;
+}) {
+  const inner = (
+    <div className="flex flex-col items-center gap-1">
+      <span className="font-display text-3xl text-ink-950">{amount}</span>
+      <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600">
+        тебе · ему остаётся {remaining}
+      </span>
+    </div>
+  );
+  return (
+    <div className="relative h-16 w-full">
+      <motion.div
+        aria-hidden
+        initial={{ opacity: 0 }}
+        animate={{
+          opacity: [0, 0.5, 0],
+          transition: { duration: 0.45, ease: easeSolemn },
+        }}
+        className="absolute inset-0 rounded-inset"
+        style={{
+          background:
+            'radial-gradient(ellipse at center, var(--color-blood-500) 0%, transparent 65%)',
+        }}
+      />
+      <motion.div
+        variants={tearLeft}
+        initial="hidden"
+        animate="visible"
+        className="absolute inset-0 flex items-center justify-center"
+        style={{ clipPath: 'polygon(0 0, 52% 0, 48% 100%, 0 100%)' }}
+      >
+        {inner}
+      </motion.div>
+      <motion.div
+        variants={tearRight}
+        initial="hidden"
+        animate="visible"
+        className="absolute inset-0 flex items-center justify-center"
+        style={{ clipPath: 'polygon(52% 0, 100% 0, 100% 100%, 48% 100%)' }}
+      >
+        {inner}
+      </motion.div>
     </div>
   );
 }
@@ -284,6 +415,136 @@ export function AbortRoundButton({
         </p>
       )}
     </div>
+  );
+}
+
+/**
+ * Плавно интерполирует число от предыдущего к новому за ~450ms.
+ * Пропускает анимацию при первом mount (нет prev) и при reduced-motion.
+ */
+function AnimatedNumber({ value, className }: { value: number; className?: string }) {
+  const reduce = useReducedMotion();
+  const [display, setDisplay] = useState(value);
+  const prevRef = useRef(value);
+
+  useEffect(() => {
+    const from = prevRef.current;
+    const to = value;
+    prevRef.current = value;
+    if (reduce || from === to) {
+      setDisplay(to);
+      return;
+    }
+    const start = performance.now();
+    const duration = 450;
+    let raf = 0;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      // ease-out cubic
+      const eased = 1 - Math.pow(1 - t, 3);
+      setDisplay(Math.round(from + (to - from) * eased));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value, reduce]);
+
+  return <span className={className}>{display}</span>;
+}
+
+/**
+ * Сцена C: строки табло вкатываются снизу stagger 80ms,
+ * числа плавно тикают от прошлого счёта к новому,
+ * лидер по дельте получает короткий golden pulse.
+ */
+function ScoreBoard({
+  score,
+  currentUserId,
+}: {
+  score: SessionScoreDto;
+  currentUserId: string;
+}) {
+  const prevScoresRef = useRef<Map<string, number>>(new Map());
+
+  // Дельты вычисляем ДО обновления prev, а обновляем в effect ниже — иначе
+  // повторный render на других props перезатрёт первую дельту.
+  const deltas = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const p of score.players) {
+      const prev = prevScoresRef.current.get(p.userId) ?? 0;
+      map.set(p.userId, p.score - prev);
+    }
+    return map;
+  }, [score.players]);
+
+  const winnerId = useMemo(() => {
+    let best = -Infinity;
+    let winner: string | null = null;
+    for (const [id, d] of deltas) {
+      if (d > best) {
+        best = d;
+        winner = id;
+      }
+    }
+    // Пульсируем только если дельта строго > 0 — иначе «победа с нулём» нелепа.
+    return best > 0 ? winner : null;
+  }, [deltas]);
+
+  useEffect(() => {
+    for (const p of score.players) {
+      prevScoresRef.current.set(p.userId, p.score);
+    }
+  }, [score.players]);
+
+  const sorted = useMemo(
+    () => [...score.players].sort((a, b) => b.score - a.score),
+    [score.players],
+  );
+
+  return (
+    <>
+      <p className="text-center font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600">
+        Сыграно раундов: {score.roundsCompleted}
+      </p>
+      <motion.ul
+        variants={scoreListStagger}
+        initial="hidden"
+        animate="visible"
+        className="flex flex-col divide-y divide-brass-500/20"
+      >
+        {sorted.map((p) => {
+          const isMe = p.userId === currentUserId;
+          const isWinner = p.userId === winnerId;
+          return (
+            <motion.li
+              key={p.userId}
+              variants={scoreRowEnter}
+              {...(isWinner
+                ? {
+                    animate: {
+                      scale: [1, 1.04, 1],
+                      transition: { duration: 0.8, repeat: 1, ease: 'easeInOut' as const },
+                    },
+                  }
+                : {})}
+              className={`flex items-center justify-between py-2 font-body ${
+                isMe ? 'text-ember-700' : 'text-ink-900'
+              } ${
+                isWinner
+                  ? 'rounded-inset px-2 bg-[radial-gradient(ellipse_at_center,rgba(168,135,63,0.25),transparent_70%)]'
+                  : ''
+              }`}
+            >
+              <span className="font-display uppercase tracking-[0.14em]">
+                {p.nickname}
+                {isMe && ' · ты'}
+              </span>
+              <AnimatedNumber value={p.score} className="font-display text-xl" />
+            </motion.li>
+          );
+        })}
+      </motion.ul>
+    </>
   );
 }
 
@@ -343,32 +604,7 @@ export function RoundResultPanel({
           пойдёт следующий).
         </p>
       ) : (
-        <>
-          <p className="text-center font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600">
-            Сыграно раундов: {score.roundsCompleted}
-          </p>
-          <ul className="flex flex-col divide-y divide-brass-500/20">
-            {[...score.players]
-              .sort((a, b) => b.score - a.score)
-              .map((p) => {
-                const isMe = p.userId === currentUserId;
-                return (
-                  <li
-                    key={p.userId}
-                    className={`flex items-center justify-between py-2 font-body ${
-                      isMe ? 'text-ember-700' : 'text-ink-900'
-                    }`}
-                  >
-                    <span className="font-display uppercase tracking-[0.14em]">
-                      {p.nickname}
-                      {isMe && ' · ты'}
-                    </span>
-                    <span className="font-display text-xl">{p.score}</span>
-                  </li>
-                );
-              })}
-          </ul>
-        </>
+        <ScoreBoard score={score} currentUserId={currentUserId} />
       )}
 
       {isAdmin && isSessionRunning && (
@@ -377,7 +613,7 @@ export function RoundResultPanel({
             type="button"
             onClick={submitNext}
             disabled={disabled}
-            className="rounded-panel border border-ember-600/40 bg-ember-500 px-6 py-2 font-display text-sm uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile px-6 py-2 font-display text-sm uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {sending ? 'Идёт закрытие…' : nextLabel}
           </button>
@@ -699,7 +935,7 @@ export function Session() {
                     );
                   }
                 }}
-                className="rounded-panel border border-ember-600/40 bg-ember-500 px-8 py-3 font-display text-sm uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile px-8 py-3 font-display text-sm uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50"
                 title={liveConnected ? '' : 'ждём подключение к живой ленте'}
               >
                 Начать партию

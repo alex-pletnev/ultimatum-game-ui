@@ -23,6 +23,12 @@ export default defineConfig({
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
+    // Ambient-анимации (Parchment idle float, WaxSeal settle) — infinite/continuous.
+    // Без reducedMotion Playwright'овский stability-check ждёт бесконечно и падает
+    // с `element is not stable`. reduce → браузер репортит prefers-reduced-motion,
+    // наш motion-код выключает transforms → тесты стабильны и заодно проверяют
+    // reduced-motion path.
+    reducedMotion: 'reduce',
   },
   projects: [
     {
