@@ -56,6 +56,7 @@ export function useSessionStats(id: string | undefined) {
     queryFn: async () => {
       const csv = await apiFetchText(
         `/statistics/${encodeURIComponent(id ?? '')}/csv`,
+        { withAuth: false },
       );
       return parseCsv(csv).map(toRow);
     },

@@ -82,6 +82,9 @@ export function useSessionDetails(id: string | undefined) {
     queryFn: () =>
       apiFetch<SessionWithTeamsAndMembersResponse>(
         `/session/${encodeURIComponent(id ?? '')}/with-teams-and-members`,
+        // withAuth: false, чтобы stale-токен в localStorage не давал 403
+        // (endpoint публичный — см. BACKEND-FIX-public-stats-endpoint.md).
+        { withAuth: false },
       ),
     enabled: id !== undefined && id.length > 0,
     staleTime: 5_000,

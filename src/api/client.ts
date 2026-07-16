@@ -64,6 +64,12 @@ async function refreshAccessToken(): Promise<string | null> {
 
 type ApiFetchInit = Omit<RequestInit, 'body'> & {
   body?: BodyInit | Record<string, unknown> | unknown[] | null;
+  /**
+   * Если `false` — не отправляем Authorization даже если токен есть.
+   * Нужно для публичных endpoint'ов (например /statistics/{id}/csv): stale-token
+   * пользователя иначе тригерит 403 вместо 200. Default: true.
+   */
+  withAuth?: boolean;
 };
 
 function normalizeBody(
@@ -85,6 +91,7 @@ function normalizeBody(
 }
 
 export async function apiFetch<T>(path: string, init: ApiFetchInit = {}): Promise<T> {
+  const withAuth = init.withAuth !== false;
   const send = async (accessToken: string | null): Promise<Response> => {
     const headers = new Headers(init.headers);
     const body = normalizeBody(init.body, headers);
@@ -96,9 +103,9 @@ export async function apiFetch<T>(path: string, init: ApiFetchInit = {}): Promis
     });
   };
 
-  let response = await send(authStorage.getAccess());
+  let response = await send(withAuth ? authStorage.getAccess() : null);
 
-  if (response.status === 401) {
+  if (withAuth && response.status === 401) {
     const refreshed = await refreshAccessToken();
     if (refreshed !== null) response = await send(refreshed);
   }
@@ -119,6 +126,7 @@ export async function apiFetch<T>(path: string, init: ApiFetchInit = {}): Promis
 
 /** То же что `apiFetch`, но ожидает text/plain (например CSV-экспорт статистики). */
 export async function apiFetchText(path: string, init: ApiFetchInit = {}): Promise<string> {
+  const withAuth = init.withAuth !== false;
   const send = async (accessToken: string | null): Promise<Response> => {
     const headers = new Headers(init.headers);
     const body = normalizeBody(init.body, headers);
@@ -130,8 +138,8 @@ export async function apiFetchText(path: string, init: ApiFetchInit = {}): Promi
     });
   };
 
-  let response = await send(authStorage.getAccess());
-  if (response.status === 401) {
+  let response = await send(withAuth ? authStorage.getAccess() : null);
+  if (withAuth && response.status === 401) {
     const refreshed = await refreshAccessToken();
     if (refreshed !== null) response = await send(refreshed);
   }
