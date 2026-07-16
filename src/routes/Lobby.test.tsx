@@ -21,13 +21,27 @@ const USER_PLAYER = {
 };
 
 /**
- * Роутит mocked fetch по url-substring: любой запрос к /user отдаёт стандартного PLAYER'а,
- * запрос к /session — то, что передано вторым параметром.
+ * Роутит mocked fetch по url-substring: /user → PLAYER, list /session → sessionsResponse,
+ * details `/session/{id}/with-teams-and-members` → канонический DTO с двумя членами
+ * (нужен для SessionCard: он тянет details, чтобы получить membersCount).
  */
 function mockFetchWithSessions(sessionsResponse: Response) {
   vi.mocked(fetch).mockImplementation((input: RequestInfo | URL) => {
     const url = typeof input === 'string' ? input : input.toString();
     if (url.includes('/user')) return Promise.resolve(jsonResponse(200, USER_PLAYER));
+    if (url.includes('/with-teams-and-members')) {
+      return Promise.resolve(
+        jsonResponse(200, {
+          ...sampleSession(),
+          teams: [{ id: 't-1', name: 'all', members: [] }],
+          members: [
+            { id: 'u-1', nickname: 'Merlin', role: 'ADMIN', createdAt: '' },
+            { id: 'u-2', nickname: 'Second', role: 'PLAYER', createdAt: '' },
+          ],
+          observers: [],
+        }),
+      );
+    }
     if (url.includes('/session')) return Promise.resolve(sessionsResponse.clone());
     return Promise.resolve(jsonResponse(404, { message: 'not mocked' }));
   });
@@ -113,7 +127,9 @@ describe('Lobby', () => {
     );
     expect(screen.getByText('Совет старейшин')).toBeInTheDocument();
     expect(screen.getAllByText(/ведущий · Merlin/i)).toHaveLength(2);
-    expect(screen.getAllByText('2/4')).toHaveLength(2);
+    // taken/total появляется после отдельного `/with-teams-and-members` per-card
+    // — ждём отдельно, а не в первом waitFor.
+    await waitFor(() => expect(screen.getAllByText('2/4')).toHaveLength(2));
   });
 
   it('shows error state with retry button when request fails', async () => {

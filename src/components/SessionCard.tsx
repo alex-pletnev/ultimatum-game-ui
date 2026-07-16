@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { Parchment } from './Parchment';
 import { WaxSeal } from './WaxSeal';
-import { useJoinSession } from '../api/session-queries';
+import { useJoinSession, useSessionDetails } from '../api/session-queries';
 import { ApiError } from '../api/client';
 import type { SessionResponse, UserResponse } from '../api/types';
 
@@ -10,13 +10,10 @@ function sessionTypeLabel(type: SessionResponse['config']['sessionType']): strin
   return type === 'TEAM_BATTLE' ? 'Битва команд' : 'Все против всех';
 }
 
-function currentSeatsTaken(session: SessionResponse): number {
-  return session.teams.reduce((sum, t) => sum + t.size, 0);
-}
-
 type CtaState =
   | { kind: 'own'; href: string }
   | { kind: 'team-unsupported' }
+  | { kind: 'full' }
   | { kind: 'join'; onClick: () => void; isPending: boolean; error: string | null };
 
 type Props = {
@@ -26,10 +23,18 @@ type Props = {
 
 export function SessionCard({ session, currentUser }: Props) {
   const initial = session.admin.nickname.charAt(0).toUpperCase();
-  const taken = currentSeatsTaken(session);
   const total = session.config.numPlayers;
   const isTeam = session.config.sessionType === 'TEAM_BATTLE';
   const isOwn = currentUser !== undefined && session.admin.id === currentUser.id;
+
+  // GET /session (list) не отдаёт membersCount → для FFA `session.teams` пуст и
+  // taken всегда 0. Тянем details по каждой карточке — react-query дедуп'ит запрос
+  // с полностраничной подпиской в Session.tsx. Кроме того, backend не закрывает
+  // openToConnect у полных сессий (BACKEND-FIX-session-list-member-count.md),
+  // поэтому «полная» карточка тут и определяется вручную.
+  const details = useSessionDetails(session.id);
+  const taken = details.data?.members.length ?? 0;
+  const isFull = details.data !== undefined && taken >= total;
 
   const join = useJoinSession();
   const navigate = useNavigate();
@@ -39,27 +44,29 @@ export function SessionCard({ session, currentUser }: Props) {
     ? { kind: 'own', href: `/session/${session.id}` }
     : isTeam
       ? { kind: 'team-unsupported' }
-      : {
-          kind: 'join',
-          isPending: join.isPending,
-          error: localError,
-          onClick: () => {
-            setLocalError(null);
-            join.mutate(
-              { sessionId: session.id },
-              {
-                onSuccess: () => navigate(`/session/${session.id}`),
-                onError: (e) => {
-                  const msg =
-                    e instanceof ApiError
-                      ? e.body?.message ?? e.message
-                      : 'Стол не отвечает';
-                  setLocalError(msg);
+      : isFull
+        ? { kind: 'full' }
+        : {
+            kind: 'join',
+            isPending: join.isPending,
+            error: localError,
+            onClick: () => {
+              setLocalError(null);
+              join.mutate(
+                { sessionId: session.id },
+                {
+                  onSuccess: () => navigate(`/session/${session.id}`),
+                  onError: (e) => {
+                    const msg =
+                      e instanceof ApiError
+                        ? e.body?.message ?? e.message
+                        : 'Стол не отвечает';
+                    setLocalError(msg);
+                  },
                 },
-              },
-            );
-          },
-        };
+              );
+            },
+          };
 
   // Тактильный отклик карточки в лобби: при наведении лёгкий подъём + shadow up.
   // Idle-wobble сознательно не добавляем — в сетке из 8 карт становится тошнотворно.
@@ -122,6 +129,17 @@ export function SessionCard({ session, currentUser }: Props) {
           className="cursor-not-allowed rounded-panel border border-ember-600/30 bg-ember-500/60 px-6 py-2 font-display text-xs uppercase tracking-[0.24em] text-night-950/60"
         >
           Битвы команд — скоро
+        </button>
+      )}
+
+      {cta.kind === 'full' && (
+        <button
+          type="button"
+          disabled
+          title="Все места заняты"
+          className="cursor-not-allowed rounded-panel border border-brass-500/40 bg-transparent px-6 py-2 font-mono text-[10px] uppercase tracking-[0.3em] text-ink-900/50"
+        >
+          Мест больше нет
         </button>
       )}
 
