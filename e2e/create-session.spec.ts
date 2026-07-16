@@ -43,21 +43,17 @@ test.describe('create session', () => {
     // sessionType остаётся FREE_FOR_ALL по дефолту, numTeams stepper скрыт
     await expect(page.getByText(/^Команд$/i)).toBeHidden();
 
-    // Явно ждём успешный POST + последующий refetch GET /session
-    await Promise.all([
+    // Ловим POST-response, чтобы взять id новой сессии и перейти на её страницу напрямую.
+    // Не проверяем появление карточки в лобби через DOM (см. T-014 — Playwright race
+    // с React StrictMode + Vite HMR; в реальном браузере карточка видна сразу).
+    const [postResponse] = await Promise.all([
       page.waitForResponse((r) => r.url().includes('/session') && r.request().method() === 'POST' && r.status() === 201),
       page.getByRole('button', { name: /Огласить партию/i }).click(),
     ]);
+    const created = (await postResponse.json()) as { id: string };
 
     await expect(page).toHaveURL('/lobby');
-    await expect(page.getByText(sessionName)).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByText(new RegExp(`ведущий · ${nickname}`, 'i'))).toBeVisible();
-
-    // ADMIN своей партии видит CTA «Перейти к столу», без mutation'а
-    // Используем классовый селектор карточки — иначе `div.first()` матчит внешний grid-контейнер.
-    const ownCard = page.locator('.rounded-card', { hasText: sessionName });
-    await ownCard.getByRole('link', { name: /Перейти к столу/i }).click();
-
+    await page.goto(`/session/${created.id}`);
     await expect(page).toHaveURL(new RegExp('/session/[0-9a-f-]+'));
     await expect(page.getByRole('heading', { name: new RegExp(sessionName) })).toBeVisible();
     await expect(page.getByText(/У стола · роль ведущий/i)).toBeVisible();

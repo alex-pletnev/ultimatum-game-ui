@@ -8,12 +8,13 @@
 
 | ID | Название | Статус | Приоритет | Обновлено | Файл |
 |----|----------|--------|-----------|-----------|------|
-| _(пока пусто)_ | | | | | |
+| T-014 | Lobby после POST /session — Playwright race | pending | low | 2026-07-16 | [T-014-lobby-refetch-race-debug.md](T-014-lobby-refetch-race-debug.md) |
 
 ## Закрытые задачи
 
 | ID | Название | Статус | Закрыто | Файл |
 |----|----------|--------|---------|------|
+| T-013 | e2e — независимость от БД + verify current-round fix | done | 2026-07-16 | [T-013-verify-current-round-fix.md](T-013-verify-current-round-fix.md) |
 | T-001 | Изучить frontend-integration/, заполнить API-контракт | done | 2026-07-15 | [T-001-fetch-and-document-api.md](T-001-fetch-and-document-api.md) |
 | T-002 | Vite+React+TS scaffolding, Tailwind, tooling | done | 2026-07-15 | [T-002-scaffold-vite-react-tailwind.md](T-002-scaffold-vite-react-tailwind.md) |
 | T-003 | Design tokens: фэнтези-настолка + Claude-brand | done | 2026-07-15 | [T-003-design-tokens-claude-brand.md](T-003-design-tokens-claude-brand.md) |
