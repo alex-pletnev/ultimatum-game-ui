@@ -477,12 +477,22 @@ export function Session() {
             {session.displayName}
           </h1>
         </div>
-        <Link
-          to="/lobby"
-          className="font-mono text-[10px] uppercase tracking-[0.3em] text-parchment-300/60 hover:text-ember-400"
-        >
-          ← в лобби
-        </Link>
+        <div className="flex flex-col items-end gap-1">
+          {session.state !== 'CREATED' && (
+            <Link
+              to={`/session/${session.id}/stats`}
+              className="font-mono text-[10px] uppercase tracking-[0.3em] text-parchment-300/60 hover:text-ember-400"
+            >
+              летопись →
+            </Link>
+          )}
+          <Link
+            to="/lobby"
+            className="font-mono text-[10px] uppercase tracking-[0.3em] text-parchment-300/60 hover:text-ember-400"
+          >
+            ← в лобби
+          </Link>
+        </div>
       </header>
 
       <div className="grid gap-6 md:grid-cols-2">

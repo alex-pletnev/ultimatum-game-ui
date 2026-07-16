@@ -116,3 +116,27 @@ export async function apiFetch<T>(path: string, init: ApiFetchInit = {}): Promis
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
 }
+
+/** То же что `apiFetch`, но ожидает text/plain (например CSV-экспорт статистики). */
+export async function apiFetchText(path: string, init: ApiFetchInit = {}): Promise<string> {
+  const send = async (accessToken: string | null): Promise<Response> => {
+    const headers = new Headers(init.headers);
+    const body = normalizeBody(init.body, headers);
+    if (accessToken !== null) headers.set('Authorization', `Bearer ${accessToken}`);
+    return fetch(`${config.apiBaseUrl}${path}`, {
+      ...init,
+      body: body ?? null,
+      headers,
+    });
+  };
+
+  let response = await send(authStorage.getAccess());
+  if (response.status === 401) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed !== null) response = await send(refreshed);
+  }
+  if (!response.ok) {
+    throw new ApiError(response.status, null, response.statusText);
+  }
+  return await response.text();
+}

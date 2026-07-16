@@ -7,6 +7,7 @@ import { CreateSession } from './routes/CreateSession';
 import { Lobby } from './routes/Lobby';
 import { Register } from './routes/Register';
 import { Session } from './routes/Session';
+import { Stats } from './routes/Stats';
 import { StyleGuide } from './routes/StyleGuide';
 import { createQueryClient } from './api/query-client';
 import { StompProvider } from './api/ws/StompProvider';
@@ -28,6 +29,7 @@ createRoot(rootElement).render(
             <Route path="/lobby" element={<Lobby />} />
             <Route path="/lobby/new" element={<CreateSession />} />
             <Route path="/session/:id" element={<Session />} />
+            <Route path="/session/:id/stats" element={<Stats />} />
             <Route path="/_style-guide" element={<StyleGuide />} />
           </Routes>
         </BrowserRouter>

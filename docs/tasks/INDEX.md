@@ -20,6 +20,7 @@
 | T-017 | Round finalization — счёт + ADMIN next-round | done | 2026-07-16 | [T-017-round-finalization.md](T-017-round-finalization.md) |
 | T-018 | Full gameplay e2e — 3 контекста через полный раунд | done | 2026-07-16 | [T-018-full-gameplay-e2e.md](T-018-full-gameplay-e2e.md) |
 | T-019 | Round abort + мелкая полировка Session-панели | done | 2026-07-16 | [T-019-round-abort-and-polish.md](T-019-round-abort-and-polish.md) |
+| T-020 | Страница статистики — сырые + агрегированные + графики | done | 2026-07-16 | [T-020-statistics-page.md](T-020-statistics-page.md) |
 | T-001 | Изучить frontend-integration/, заполнить API-контракт | done | 2026-07-15 | [T-001-fetch-and-document-api.md](T-001-fetch-and-document-api.md) |
 | T-002 | Vite+React+TS scaffolding, Tailwind, tooling | done | 2026-07-15 | [T-002-scaffold-vite-react-tailwind.md](T-002-scaffold-vite-react-tailwind.md) |
 | T-003 | Design tokens: фэнтези-настолка + Claude-brand | done | 2026-07-15 | [T-003-design-tokens-claude-brand.md](T-003-design-tokens-claude-brand.md) |
