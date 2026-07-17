@@ -136,7 +136,7 @@ export function OfferPhasePanel({
         type="button"
         onClick={submit}
         disabled={disabled}
-        className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile px-6 py-2 font-display text-sm uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50"
+        className="w-full rounded-panel border border-ember-600/40 bg-ember-500 press-tactile min-h-11 px-6 py-2 font-display text-sm uppercase tracking-[0.2em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:tracking-[0.24em]"
         title={liveConnected ? '' : 'ждём подключение к живой ленте'}
       >
         {sending ? 'Отправляем…' : 'Огласить сделку'}
@@ -257,7 +257,7 @@ export function DecisionPhasePanel({
           type="button"
           onClick={() => submit(true)}
           disabled={disabled}
-          className="press-tactile rounded-panel border border-verdigris-600/40 bg-verdigris-500/90 px-4 py-2 font-display text-sm uppercase tracking-[0.2em] text-parchment-100 shadow-[0_4px_0_var(--color-verdigris-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50"
+          className="press-tactile min-h-11 rounded-panel border border-verdigris-600/40 bg-verdigris-500/90 px-4 py-2 font-display text-sm uppercase tracking-[0.2em] text-parchment-100 shadow-[0_4px_0_var(--color-verdigris-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {sending === 'accept' ? 'Скрепляем…' : 'Согласиться'}
         </button>
@@ -265,7 +265,7 @@ export function DecisionPhasePanel({
           type="button"
           onClick={() => submit(false)}
           disabled={disabled}
-          className="press-tactile rounded-panel border border-blood-600/40 bg-blood-500/90 px-4 py-2 font-display text-sm uppercase tracking-[0.2em] text-parchment-100 shadow-[0_4px_0_var(--color-blood-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50"
+          className="press-tactile min-h-11 rounded-panel border border-blood-600/40 bg-blood-500/90 px-4 py-2 font-display text-sm uppercase tracking-[0.2em] text-parchment-100 shadow-[0_4px_0_var(--color-blood-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {sending === 'reject' ? 'Разбиваем…' : 'Разбить сделку'}
         </button>
@@ -592,7 +592,7 @@ export function RoundResultPanel({
     <div className="flex w-full max-w-md flex-col gap-4">
       <div className="flex items-center gap-3">
         <span className="h-px flex-1 bg-brass-500/40" />
-        <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-brass-500">
+        <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-brass-500 sm:tracking-[0.35em]">
           Табло очков
         </span>
         <span className="h-px flex-1 bg-brass-500/40" />
@@ -613,7 +613,7 @@ export function RoundResultPanel({
             type="button"
             onClick={submitNext}
             disabled={disabled}
-            className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile px-6 py-2 font-display text-sm uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile min-h-11 px-6 py-2 font-display text-sm uppercase tracking-[0.2em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50 sm:tracking-[0.24em]"
           >
             {sending ? 'Идёт закрытие…' : nextLabel}
           </button>
@@ -675,7 +675,7 @@ export function Session() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-3xl px-8 py-16">
+      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-8 sm:py-16">
         <div
           aria-hidden
           className="h-96 animate-pulse rounded-card bg-parchment-100/40"
@@ -687,7 +687,7 @@ export function Session() {
 
   if (isError || session === undefined || user === undefined) {
     return (
-      <div className="mx-auto max-w-lg px-8 py-16">
+      <div className="mx-auto max-w-lg px-4 py-10 sm:px-8 sm:py-16">
         <Parchment className="text-center">
           <div className="flex flex-col items-center gap-4">
             <WaxSeal size={64} monogram="!" />
@@ -714,10 +714,10 @@ export function Session() {
   const observerList = session.observers;
 
   return (
-    <div className="mx-auto max-w-3xl px-8 py-16">
-      <header className="mb-10 flex items-baseline justify-between border-b border-brass-500/30 pb-6">
+    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-8 sm:py-16">
+      <header className="mb-8 flex flex-col gap-4 border-b border-brass-500/30 pb-6 sm:mb-10 sm:flex-row sm:items-baseline sm:justify-between">
         <div>
-          <p className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.4em] text-brass-500">
+          <p className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.3em] text-brass-500 sm:tracking-[0.4em]">
             У стола · роль {myRole}
             <span
               aria-label={liveConnected ? 'подключено к живой ленте' : 'подключение к живой ленте'}
@@ -727,11 +727,11 @@ export function Session() {
               }`}
             />
           </p>
-          <h1 className="mt-2 font-display text-3xl uppercase tracking-[0.16em] text-parchment-100">
+          <h1 className="mt-2 font-display text-2xl uppercase tracking-[0.16em] text-parchment-100 sm:text-3xl">
             {session.displayName}
           </h1>
         </div>
-        <div className="flex flex-col items-end gap-1">
+        <div className="flex flex-col items-start gap-1 sm:items-end">
           {session.state !== 'CREATED' && (
             <Link
               to={`/session/${session.id}/stats`}
@@ -753,7 +753,7 @@ export function Session() {
         <Parchment className="flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <span className="h-px flex-1 bg-brass-500/40" />
-            <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-brass-500">
+            <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-brass-500 sm:tracking-[0.35em]">
               За столом
             </span>
             <span className="h-px flex-1 bg-brass-500/40" />
@@ -777,7 +777,7 @@ export function Session() {
         <Parchment className="flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <span className="h-px flex-1 bg-brass-500/40" />
-            <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-brass-500">
+            <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-brass-500 sm:tracking-[0.35em]">
               Устав партии
             </span>
             <span className="h-px flex-1 bg-brass-500/40" />
@@ -817,13 +817,13 @@ export function Session() {
 
       <Parchment className="mx-auto mt-10 max-w-2xl">
         <div className="flex flex-col items-center gap-4 text-center">
-          <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-brass-600">
+          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600 sm:tracking-[0.4em]">
             {sessionStateLabel[session.state]}
           </p>
 
           {session.state === 'RUNNING' && round !== undefined && (
             <>
-              <h2 className="font-display text-2xl uppercase tracking-[0.16em] text-ink-950">
+              <h2 className="font-display text-xl uppercase tracking-[0.16em] text-ink-950 sm:text-2xl">
                 Раунд {round.roundNumber} / {session.config.numRounds}
               </h2>
               <span className="h-px w-16 bg-brass-500/60" />
@@ -935,7 +935,7 @@ export function Session() {
                     );
                   }
                 }}
-                className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile px-8 py-3 font-display text-sm uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile min-h-11 px-6 py-3 font-display text-sm uppercase tracking-[0.2em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50 sm:px-8 sm:tracking-[0.24em]"
                 title={liveConnected ? '' : 'ждём подключение к живой ленте'}
               >
                 Начать партию
