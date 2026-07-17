@@ -28,13 +28,13 @@ function Welcome() {
 
   return (
     <div className="flex flex-col items-center gap-8 text-center">
-      <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-brass-600">
+      <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600 sm:tracking-[0.4em]">
         Anno MMXXVI · Volumen I
       </p>
 
       <div className="flex flex-col items-center gap-2">
         <p className="font-body italic text-ink-900/70">Добро пожаловать,</p>
-        <h1 className="font-display text-4xl uppercase tracking-[0.16em] text-ink-950">
+        <h1 className="w-full break-words font-display text-3xl uppercase tracking-[0.16em] text-ink-950 sm:text-4xl">
           {user.nickname}
         </h1>
         <RoleLabel role={user.role} />
@@ -51,7 +51,7 @@ function Welcome() {
       <div className="flex flex-col items-center gap-3">
         <Link
           to="/lobby"
-          className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile px-8 py-3 font-display text-sm uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] hover:shadow-[0_5px_0_var(--color-ember-700)] active:translate-y-[1px] active:shadow-[0_2px_0_var(--color-ember-700)]"
+          className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile min-h-11 px-6 py-3 font-display text-sm uppercase tracking-[0.2em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] hover:shadow-[0_5px_0_var(--color-ember-700)] active:translate-y-[1px] active:shadow-[0_2px_0_var(--color-ember-700)] sm:px-8 sm:tracking-[0.24em]"
         >
           Открыть лобби
         </Link>
@@ -71,12 +71,12 @@ function Welcome() {
 function TitleCard() {
   return (
     <div className="flex flex-col items-center gap-8 text-center">
-      <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-brass-600">
+      <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600 sm:tracking-[0.4em]">
         Anno MMXXVI · Volumen I
       </p>
 
       <div className="flex flex-col items-center gap-2">
-        <h1 className="font-display text-5xl font-semibold uppercase tracking-[0.16em] text-ink-950">
+        <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.16em] text-ink-950 sm:text-5xl">
           Ultimatum
         </h1>
         <span className="h-px w-32 bg-brass-500/60" />
@@ -96,7 +96,7 @@ function TitleCard() {
       <div className="flex flex-col items-center gap-3">
         <Link
           to="/register"
-          className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile px-8 py-3 font-display text-sm uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] hover:shadow-[0_5px_0_var(--color-ember-700)] active:translate-y-[1px] active:shadow-[0_2px_0_var(--color-ember-700)]"
+          className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile min-h-11 px-6 py-3 font-display text-sm uppercase tracking-[0.2em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] hover:shadow-[0_5px_0_var(--color-ember-700)] active:translate-y-[1px] active:shadow-[0_2px_0_var(--color-ember-700)] sm:px-8 sm:tracking-[0.24em]"
         >
           Присесть за стол
         </Link>
@@ -115,7 +115,7 @@ export function App() {
   const token = useAccessToken();
 
   return (
-    <main className="grid min-h-screen place-items-center px-6 py-16">
+    <main className="grid min-h-screen place-items-center px-4 py-10 sm:px-6 sm:py-16">
       <Parchment className="w-full max-w-xl">
         {token !== null ? <Welcome /> : <TitleCard />}
       </Parchment>

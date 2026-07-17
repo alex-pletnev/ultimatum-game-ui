@@ -40,7 +40,7 @@ export function RoleChoice({ value, onChange, name = 'role' }: Props) {
 
   return (
     <fieldset className="flex flex-col gap-3">
-      <legend className="font-mono text-[10px] uppercase tracking-[0.35em] text-brass-600">
+      <legend className="font-mono text-[10px] uppercase tracking-[0.25em] text-brass-600 sm:tracking-[0.35em]">
         Выбор роли
       </legend>
       <div className="grid grid-cols-2 gap-3">
