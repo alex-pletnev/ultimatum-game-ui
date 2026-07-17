@@ -10,6 +10,7 @@
 |----|----------|--------|-----------|-----------|------|
 | T-014 | Lobby после POST /session — Playwright race | pending | low | 2026-07-16 | [T-014-lobby-refetch-race-debug.md](T-014-lobby-refetch-race-debug.md) |
 | T-023 | Prod deploy на GitHub Pages | in_progress | high | 2026-07-17 | [T-023-gh-pages-prod-deploy.md](T-023-gh-pages-prod-deploy.md) |
+| T-024 | Мобильная адаптивность — 0 horizontal scroll на iPhone | in_progress | high | 2026-07-17 | [T-024-mobile-adaptive-ui.md](T-024-mobile-adaptive-ui.md) |
 
 ## Закрытые задачи
 
