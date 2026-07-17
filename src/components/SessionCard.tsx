@@ -75,7 +75,7 @@ export function SessionCard({ session, currentUser }: Props) {
       <div className="flex items-start gap-4">
         <WaxSeal size={56} monogram={initial} />
         <div className="flex flex-col">
-          <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-brass-600">
+          <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-brass-600 sm:tracking-[0.35em]">
             {sessionTypeLabel(session.config.sessionType)}
           </p>
           <h3 className="font-display text-xl uppercase tracking-[0.16em] text-ink-950">
@@ -89,7 +89,7 @@ export function SessionCard({ session, currentUser }: Props) {
 
       <div className="flex items-center gap-3">
         <span className="h-px flex-1 bg-brass-500/40" />
-        <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-brass-500">
+        <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-brass-500 sm:tracking-[0.35em]">
           Устав партии
         </span>
         <span className="h-px flex-1 bg-brass-500/40" />
@@ -115,7 +115,7 @@ export function SessionCard({ session, currentUser }: Props) {
       {cta.kind === 'own' && (
         <Link
           to={cta.href}
-          className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile px-6 py-2 text-center font-display text-xs uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px]"
+          className="inline-flex min-h-11 items-center justify-center rounded-panel border border-ember-600/40 bg-ember-500 press-tactile px-6 py-2 text-center font-display text-xs uppercase tracking-[0.2em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] sm:tracking-[0.24em]"
         >
           Перейти к столу
         </Link>
@@ -126,7 +126,7 @@ export function SessionCard({ session, currentUser }: Props) {
           type="button"
           disabled
           title="Битвы команд — скоро (T-010+)"
-          className="cursor-not-allowed rounded-panel border border-ember-600/30 bg-ember-500/60 px-6 py-2 font-display text-xs uppercase tracking-[0.24em] text-night-950/60"
+          className="cursor-not-allowed min-h-11 rounded-panel border border-ember-600/30 bg-ember-500/60 px-6 py-2 font-display text-xs uppercase tracking-[0.2em] text-night-950/60 sm:tracking-[0.24em]"
         >
           Битвы команд — скоро
         </button>
@@ -137,7 +137,7 @@ export function SessionCard({ session, currentUser }: Props) {
           type="button"
           disabled
           title="Все места заняты"
-          className="cursor-not-allowed rounded-panel border border-brass-500/40 bg-transparent px-6 py-2 font-mono text-[10px] uppercase tracking-[0.3em] text-ink-900/50"
+          className="cursor-not-allowed min-h-11 rounded-panel border border-brass-500/40 bg-transparent px-6 py-2 font-mono text-[10px] uppercase tracking-[0.3em] text-ink-900/50"
         >
           Мест больше нет
         </button>
@@ -149,7 +149,7 @@ export function SessionCard({ session, currentUser }: Props) {
             type="button"
             onClick={cta.onClick}
             disabled={cta.isPending}
-            className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile px-6 py-2 font-display text-xs uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-wait disabled:opacity-60"
+            className="min-h-11 rounded-panel border border-ember-600/40 bg-ember-500 press-tactile px-6 py-2 font-display text-xs uppercase tracking-[0.2em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-wait disabled:opacity-60 sm:tracking-[0.24em]"
           >
             {cta.isPending ? 'занимаем место…' : 'Заявиться в партию'}
           </button>

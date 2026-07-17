@@ -11,16 +11,16 @@ import { WaxSeal } from '../components/WaxSeal';
 
 function LobbyHeader({ canCreate }: { canCreate: boolean }) {
   return (
-    <header className="mb-10 flex items-end justify-between gap-4 border-b border-brass-500/30 pb-6">
+    <header className="mb-8 flex flex-col gap-4 border-b border-brass-500/30 pb-6 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-brass-500">
+        <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-500 sm:tracking-[0.4em]">
           Собрание играющих
         </p>
-        <h1 className="mt-2 font-display text-3xl uppercase tracking-[0.16em] text-parchment-100">
+        <h1 className="mt-2 font-display text-2xl uppercase tracking-[0.16em] text-parchment-100 sm:text-3xl">
           Открытые партии
         </h1>
       </div>
-      <div className="flex flex-col items-end gap-3">
+      <div className="flex flex-col items-start gap-3 sm:items-end">
         {canCreate && (
           <div className="flex items-center gap-3">
             <Link
@@ -31,7 +31,7 @@ function LobbyHeader({ canCreate }: { canCreate: boolean }) {
             </Link>
             <Link
               to="/lobby/new"
-              className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile px-5 py-2 font-display text-xs uppercase tracking-[0.24em] text-night-950 shadow-[0_3px_0_var(--color-ember-700)] transition hover:translate-y-[-1px]"
+              className="inline-flex items-center justify-center rounded-panel border border-ember-600/40 bg-ember-500 press-tactile min-h-11 px-5 py-2 font-display text-xs uppercase tracking-[0.2em] text-night-950 shadow-[0_3px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] sm:tracking-[0.24em]"
             >
               Учредить партию
             </Link>
@@ -89,7 +89,7 @@ function ErrorState({ retry }: { retry: () => void }) {
         <button
           type="button"
           onClick={retry}
-          className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile px-6 py-2 font-display text-xs uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px]"
+          className="inline-flex items-center justify-center rounded-panel border border-ember-600/40 bg-ember-500 press-tactile min-h-11 px-6 py-2 font-display text-xs uppercase tracking-[0.2em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] sm:tracking-[0.24em]"
         >
           Постучать снова
         </button>
@@ -155,7 +155,7 @@ export function Lobby() {
   const canCreate = user?.role === 'ADMIN';
 
   return (
-    <div className="mx-auto max-w-5xl px-8 py-16">
+    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-8 sm:py-16">
       <LobbyHeader canCreate={canCreate} />
 
       {isLoading && (
