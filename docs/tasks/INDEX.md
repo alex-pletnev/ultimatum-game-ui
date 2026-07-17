@@ -10,12 +10,12 @@
 |----|----------|--------|-----------|-----------|------|
 | T-014 | Lobby после POST /session — Playwright race | pending | low | 2026-07-16 | [T-014-lobby-refetch-race-debug.md](T-014-lobby-refetch-race-debug.md) |
 | T-023 | Prod deploy на GitHub Pages | in_progress | high | 2026-07-17 | [T-023-gh-pages-prod-deploy.md](T-023-gh-pages-prod-deploy.md) |
-| T-024 | Мобильная адаптивность — 0 horizontal scroll на iPhone | in_progress | high | 2026-07-17 | [T-024-mobile-adaptive-ui.md](T-024-mobile-adaptive-ui.md) |
 
 ## Закрытые задачи
 
 | ID | Название | Статус | Закрыто | Файл |
 |----|----------|--------|---------|------|
+| T-024 | Мобильная адаптивность — 0 horizontal scroll на iPhone | done | 2026-07-17 | [T-024-mobile-adaptive-ui.md](T-024-mobile-adaptive-ui.md) |
 | T-013 | e2e — независимость от БД + verify current-round fix | done | 2026-07-16 | [T-013-verify-current-round-fix.md](T-013-verify-current-round-fix.md) |
 | T-015 | Offer flow — форма отправки оффера в фазе WAIT_OFFERS | done | 2026-07-16 | [T-015-offer-form.md](T-015-offer-form.md) |
 | T-016 | Decision flow — accept/reject в фазе OFFERS_SENT | done | 2026-07-16 | [T-016-decision-flow.md](T-016-decision-flow.md) |

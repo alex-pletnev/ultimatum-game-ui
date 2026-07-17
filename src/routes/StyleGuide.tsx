@@ -97,7 +97,7 @@ function Swatch({ shade, token }: { shade: string; token: string }) {
 
 export function StyleGuide() {
   return (
-    <div className="mx-auto max-w-5xl px-8 py-16">
+    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-8 sm:py-16">
       <header className="mb-16 flex items-baseline justify-between border-b border-brass-500/30 pb-6">
         <div>
           <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-brass-500">
