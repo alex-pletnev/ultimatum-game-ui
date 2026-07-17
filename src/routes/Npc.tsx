@@ -120,7 +120,7 @@ function ParamsEditor({
       );
     case 'VENGEFUL':
       return (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <ParamNumber
             label="Базовая доля"
             value={params.baselineFraction ?? 0.5}
@@ -171,7 +171,7 @@ function ParamsEditor({
       );
     case 'ADAPTIVE':
       return (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <ParamNumber
             label="Базовая доля"
             value={params.baselineFraction ?? 0.5}
@@ -257,7 +257,7 @@ function NpcCard({ npc, onDelete, deleting, deleteError }: {
           type="button"
           onClick={onDelete}
           disabled={deleting}
-          className="rounded-panel border border-blood-500/40 bg-transparent px-3 py-1 font-mono text-[10px] uppercase tracking-[0.3em] text-blood-500 transition hover:bg-blood-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+          className="min-h-11 rounded-panel border border-blood-500/40 bg-transparent px-3 py-1 font-mono text-[10px] uppercase tracking-[0.3em] text-blood-500 transition hover:bg-blood-500/10 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {deleting ? 'убираем…' : 'разжаловать'}
         </button>
@@ -321,13 +321,13 @@ export function Npc() {
   if (user !== undefined && user.role !== 'ADMIN') return <Navigate to="/lobby" replace />;
 
   return (
-    <div className="mx-auto max-w-5xl px-8 py-16">
-      <header className="mb-10 flex items-end justify-between border-b border-brass-500/30 pb-6">
+    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-8 sm:py-16">
+      <header className="mb-8 flex flex-col gap-4 border-b border-brass-500/30 pb-6 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-brass-500">
+          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-500 sm:tracking-[0.4em]">
             Кабинет ведущего
           </p>
-          <h1 className="mt-2 font-display text-3xl uppercase tracking-[0.16em] text-parchment-100">
+          <h1 className="mt-2 font-display text-2xl uppercase tracking-[0.16em] text-parchment-100 sm:text-3xl">
             Отряд ботов
           </h1>
         </div>
@@ -344,7 +344,7 @@ export function Npc() {
           <form onSubmit={submit} className="flex flex-col gap-5">
             <div className="flex items-center gap-3">
               <span className="h-px flex-1 bg-brass-500/40" />
-              <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-brass-500">
+              <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-brass-500 sm:tracking-[0.35em]">
                 Выковать нового
               </span>
               <span className="h-px flex-1 bg-brass-500/40" />
@@ -432,7 +432,7 @@ export function Npc() {
             <button
               type="submit"
               disabled={create.isPending || nickname.trim().length === 0}
-              className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile px-6 py-2 font-display text-sm uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile min-h-11 px-6 py-2 font-display text-sm uppercase tracking-[0.2em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50 sm:tracking-[0.24em]"
             >
               {create.isPending ? 'куём…' : 'Выковать'}
             </button>

@@ -80,7 +80,7 @@ function SummaryCards({ s, roundSum }: { s: Summary; roundSum: number }) {
 
 function Leaderboard({ players, currentUserId }: { players: PlayerRow[]; currentUserId: string }) {
   return (
-    <div className="overflow-hidden rounded-panel border border-brass-500/30">
+    <div className="overflow-x-auto rounded-panel border border-brass-500/30">
       <table className="w-full text-sm">
         <thead className="bg-parchment-100/60 font-mono text-[10px] uppercase tracking-[0.2em] text-brass-700">
           <tr>
@@ -126,7 +126,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
     <div className="mt-10 mb-4 flex items-center gap-3">
       <span className="h-px flex-1 bg-brass-500/40" />
-      <span className="font-mono text-[11px] uppercase tracking-[0.35em] text-brass-600">
+      <span className="font-mono text-[11px] uppercase tracking-[0.25em] text-brass-600 sm:tracking-[0.35em]">
         {children}
       </span>
       <span className="h-px flex-1 bg-brass-500/40" />
@@ -137,7 +137,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 function OfferHistogram({ bins }: { bins: HistogramBin[] }) {
   return (
     <ResponsiveContainer width="100%" height={260}>
-      <BarChart data={bins} margin={{ top: 10, right: 8, left: -20, bottom: 0 }}>
+      <BarChart data={bins} margin={{ top: 10, right: 8, left: 0, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke={`${C_BRASS}33`} />
         <XAxis dataKey="label" tick={{ fill: C_INK, fontSize: 11 }} />
         <YAxis allowDecimals={false} tick={{ fill: C_INK, fontSize: 11 }} />
@@ -159,7 +159,7 @@ function OfferHistogram({ bins }: { bins: HistogramBin[] }) {
 function TimelineOffers({ timeline }: { timeline: TimelinePoint[] }) {
   return (
     <ResponsiveContainer width="100%" height={240}>
-      <LineChart data={timeline} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
+      <LineChart data={timeline} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke={`${C_BRASS}33`} />
         <XAxis
           dataKey="round"
@@ -205,7 +205,7 @@ function DecisionScatter({ rows }: { rows: StatsRow[] }) {
   }));
   return (
     <ResponsiveContainer width="100%" height={260}>
-      <ScatterChart margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
+      <ScatterChart margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke={`${C_BRASS}33`} />
         <XAxis
           type="number"
@@ -466,7 +466,7 @@ export function Stats() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-4xl px-8 py-16">
+      <div className="mx-auto max-w-4xl px-4 py-10 sm:px-8 sm:py-16">
         <div
           aria-hidden
           className="h-96 animate-pulse rounded-card bg-parchment-100/40"
@@ -479,7 +479,7 @@ export function Stats() {
   const hasData = (rows?.length ?? 0) > 0;
 
   return (
-    <div className="mx-auto max-w-4xl px-8 py-16">
+    <div className="mx-auto max-w-4xl px-4 py-10 sm:px-8 sm:py-16">
       <header className="mb-8 flex items-baseline justify-between border-b border-brass-500/30 pb-6">
         <div>
           <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-brass-500">
