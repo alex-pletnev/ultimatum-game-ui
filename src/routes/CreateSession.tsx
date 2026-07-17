@@ -90,15 +90,15 @@ export function CreateSession() {
   const err = localError ?? serverError;
 
   return (
-    <main className="grid min-h-screen place-items-center px-6 py-16">
+    <main className="grid min-h-screen place-items-center px-4 py-10 sm:px-6 sm:py-16">
       <Parchment className="w-full max-w-2xl">
         <form onSubmit={submit} className="flex flex-col gap-8">
           <div className="flex flex-col items-center gap-2 text-center">
             <WaxSeal size={72} monogram="A" />
-            <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-brass-600">
+            <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600 sm:tracking-[0.4em]">
               Устав новой партии
             </p>
-            <h1 className="font-display text-3xl uppercase tracking-[0.16em] text-ink-950">
+            <h1 className="font-display text-2xl uppercase tracking-[0.16em] text-ink-950 sm:text-3xl">
               Учредить партию
             </h1>
             <span className="h-px w-24 bg-brass-500/60" />
@@ -115,7 +115,7 @@ export function CreateSession() {
           />
 
           <fieldset className="flex flex-col gap-3">
-            <legend className="font-mono text-[10px] uppercase tracking-[0.35em] text-brass-600">
+            <legend className="font-mono text-[10px] uppercase tracking-[0.25em] text-brass-600 sm:tracking-[0.35em]">
               Устройство партии
             </legend>
             <div className="grid grid-cols-2 gap-3">
@@ -150,7 +150,7 @@ export function CreateSession() {
             </div>
           </fieldset>
 
-          <div className="grid grid-cols-2 gap-6 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 md:grid-cols-3">
             <NumberStepper label="Раундов" value={numRounds} onChange={setNumRounds} min={1} max={10} />
             <NumberStepper label="Игроков" value={numPlayers} onChange={setNumPlayers} min={2} max={8} />
             {sessionType === 'TEAM_BATTLE' && (
@@ -204,7 +204,7 @@ export function CreateSession() {
             <button
               type="submit"
               disabled={create.isPending}
-              className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile px-8 py-3 font-display text-sm uppercase tracking-[0.24em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] hover:shadow-[0_5px_0_var(--color-ember-700)] active:translate-y-[1px] active:shadow-[0_2px_0_var(--color-ember-700)] disabled:cursor-wait disabled:opacity-60"
+              className="w-full rounded-panel border border-ember-600/40 bg-ember-500 press-tactile min-h-11 px-6 py-3 font-display text-sm uppercase tracking-[0.2em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] hover:shadow-[0_5px_0_var(--color-ember-700)] active:translate-y-[1px] active:shadow-[0_2px_0_var(--color-ember-700)] disabled:cursor-wait disabled:opacity-60 sm:w-auto sm:px-8 sm:tracking-[0.24em]"
             >
               {create.isPending ? 'учреждаем партию…' : 'Огласить партию'}
             </button>
