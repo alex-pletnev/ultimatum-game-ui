@@ -4,7 +4,10 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import path from 'node:path';
 
-export default defineConfig({
+// В prod build уезжаем под project-page GH Pages — `/ultimatum-game-ui/`.
+// В dev-сервер и Playwright ходят по `/`, иначе e2e ляжет.
+export default defineConfig(({ command }) => ({
+  base: command === 'build' ? '/ultimatum-game-ui/' : '/',
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
@@ -19,4 +22,4 @@ export default defineConfig({
     include: ['src/**/*.test.{ts,tsx}'],
     exclude: ['e2e/**', 'node_modules', 'dist'],
   },
-});
+}));

@@ -9,6 +9,7 @@
 | ID | Название | Статус | Приоритет | Обновлено | Файл |
 |----|----------|--------|-----------|-----------|------|
 | T-014 | Lobby после POST /session — Playwright race | pending | low | 2026-07-16 | [T-014-lobby-refetch-race-debug.md](T-014-lobby-refetch-race-debug.md) |
+| T-023 | Prod deploy на GitHub Pages | in_progress | high | 2026-07-17 | [T-023-gh-pages-prod-deploy.md](T-023-gh-pages-prod-deploy.md) |
 
 ## Закрытые задачи
 
