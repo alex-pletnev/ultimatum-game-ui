@@ -3,6 +3,16 @@
 @import './styles/tokens.css';
 
 /*
+ * Safety-guard: если один child случайно пробьёт viewport (long word,
+ * широкий SVG, фиксированный min-width), не тянуть скролл всей страницы.
+ * На iPhone это устраняет самый неприятный класс regression'ов.
+ */
+html,
+body {
+  overflow-x: hidden;
+}
+
+/*
  * Тактильный press-эффект для primary-кнопок и WaxSeal:
  * лёгкое scale-down + короткий transition. Работает поверх существующих
  * hover-translate классов. Уважает prefers-reduced-motion.
