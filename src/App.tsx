@@ -1,123 +1,68 @@
-import { Link } from 'react-router';
-import { Parchment } from './components/Parchment';
-import { WaxSeal } from './components/WaxSeal';
+import { Link, Navigate } from 'react-router';
 import { useAccessToken } from './api/auth-storage';
-import { useCurrentUser, useLogout } from './api/auth-queries';
-
-function RoleLabel({ role }: { role: string }) {
-  const label =
-    role === 'ADMIN' ? 'ведущий' : role === 'OBSERVER' ? 'наблюдатель' : 'играющий';
-  return (
-    <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-brass-600">
-      {label}
-    </span>
-  );
-}
-
-function Welcome() {
-  const { data: user, isLoading } = useCurrentUser();
-  const logout = useLogout();
-
-  if (isLoading || user === undefined) {
-    return (
-      <div className="text-center font-body italic text-ink-900/60">
-        Смотрим твоё имя в книге играющих…
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col items-center gap-8 text-center">
-      <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600 sm:tracking-[0.4em]">
-        Anno MMXXVI · Volumen I
-      </p>
-
-      <div className="flex flex-col items-center gap-2">
-        <p className="font-body italic text-ink-900/70">Добро пожаловать,</p>
-        <h1 className="w-full break-words font-display text-3xl uppercase tracking-[0.16em] text-ink-950 sm:text-4xl">
-          {user.nickname}
-        </h1>
-        <RoleLabel role={user.role} />
-        <span className="mt-2 h-px w-24 bg-brass-500/60" />
-      </div>
-
-      <WaxSeal size={88} monogram={user.nickname.charAt(0).toUpperCase()} />
-
-      <p className="font-body text-base italic leading-relaxed text-ink-900/85">
-        Стол готов. Скоро сюда добавим лобби с открытыми партиями и приглашения
-        к текущим.
-      </p>
-
-      <div className="flex flex-col items-center gap-3">
-        <Link
-          to="/lobby"
-          className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile min-h-11 px-6 py-3 font-display text-sm uppercase tracking-[0.2em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] hover:shadow-[0_5px_0_var(--color-ember-700)] active:translate-y-[1px] active:shadow-[0_2px_0_var(--color-ember-700)] sm:px-8 sm:tracking-[0.24em]"
-        >
-          Открыть лобби
-        </Link>
-        <button
-          type="button"
-          onClick={() => logout.mutate()}
-          disabled={logout.isPending}
-          className="font-mono text-[10px] uppercase tracking-[0.3em] text-ink-900/50 transition hover:text-blood-500 disabled:opacity-50"
-        >
-          {logout.isPending ? 'уходим…' : '← встать из-за стола'}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function TitleCard() {
-  return (
-    <div className="flex flex-col items-center gap-8 text-center">
-      <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600 sm:tracking-[0.4em]">
-        Anno MMXXVI · Volumen I
-      </p>
-
-      <div className="flex flex-col items-center gap-2">
-        <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.16em] text-ink-950 sm:text-5xl">
-          Ultimatum
-        </h1>
-        <span className="h-px w-32 bg-brass-500/60" />
-        <p className="font-body text-lg italic text-ink-900/80">
-          A game of offers, refusals & reckoning
-        </p>
-      </div>
-
-      <WaxSeal size={104} monogram="U" />
-
-      <p className="font-body text-base leading-relaxed text-ink-900/85">
-        Двое встречаются за столом. Первый предлагает раздел общей ставки —
-        второй принимает или отвергает. Отказ обнуляет обоих. Так проверяется,
-        что дороже: справедливость или монета.
-      </p>
-
-      <div className="flex flex-col items-center gap-3">
-        <Link
-          to="/register"
-          className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile min-h-11 px-6 py-3 font-display text-sm uppercase tracking-[0.2em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] hover:shadow-[0_5px_0_var(--color-ember-700)] active:translate-y-[1px] active:shadow-[0_2px_0_var(--color-ember-700)] sm:px-8 sm:tracking-[0.24em]"
-        >
-          Присесть за стол
-        </Link>
-        <Link
-          to="/_style-guide"
-          className="font-mono text-[10px] uppercase tracking-[0.3em] text-ink-900/50 hover:text-ember-700"
-        >
-          → книга правил (style guide)
-        </Link>
-      </div>
-    </div>
-  );
-}
+import { Parchment } from './components/Parchment';
 
 export function App() {
   const token = useAccessToken();
+  if (token !== null) return <Navigate to="/lobby" replace />;
 
   return (
-    <main className="grid min-h-screen place-items-center px-4 py-10 sm:px-6 sm:py-16">
-      <Parchment className="w-full max-w-xl">
-        {token !== null ? <Welcome /> : <TitleCard />}
+    <main className="page-container grid items-center gap-10 py-12 lg:grid-cols-2 lg:py-20">
+      <section className="flex flex-col items-start gap-6">
+        <span className="eyebrow">Игра о деньгах и справедливости</span>
+        <h1 className="text-5xl font-semibold tracking-tight sm:text-7xl">Ultimatum</h1>
+        <p className="max-w-lg text-2xl leading-snug sm:text-3xl">
+          Договоритесь о цене справедливости.
+        </p>
+        <p className="max-w-lg text-lg text-ink-900/75">
+          У вас 100 монет на двоих. Один предлагает раздел, другой решает: принять или оставить
+          обоих ни с чем.
+        </p>
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+          <Link className="button" to="/practice">
+            Попробовать без регистрации
+          </Link>
+          <Link className="button button-secondary" to="/register">
+            Играть с друзьями
+          </Link>
+        </div>
+        <p className="text-sm text-ink-900/65">
+          Учебный раунд — около минуты. Для игры с друзьями понадобится только имя.
+        </p>
+      </section>
+      <Parchment className="flex flex-col gap-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Одна сделка. Два решения.</h2>
+          <span className="badge">Пример</span>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-card bg-parchment-200 p-6">
+            <p className="text-sm">Вы оставляете</p>
+            <p className="mt-2 text-5xl font-semibold">60</p>
+            <p className="text-sm">монет</p>
+          </div>
+          <div className="rounded-card bg-ember-500/15 p-6">
+            <p className="text-sm">Предлагаете другому</p>
+            <p className="mt-2 text-5xl font-semibold">40</p>
+            <p className="text-sm">монет</p>
+          </div>
+        </div>
+        <ol className="flex flex-col gap-4 leading-relaxed">
+          <li>
+            <strong>1. Предложите раздел.</strong> Решите, сколько оставить себе.
+          </li>
+          <li>
+            <strong>2. Дождитесь ответа.</strong> Согласие — каждый получает свою долю. Отказ —
+            обоим 0.
+          </li>
+          <li>
+            <strong>3. Наберите больше монет.</strong> В игре каждый предлагает и отвечает на чужое
+            предложение.
+          </li>
+        </ol>
+        <Link className="text-link" to="/rules">
+          Как устроена игра →
+        </Link>
       </Parchment>
     </main>
   );

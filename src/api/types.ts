@@ -117,7 +117,7 @@ export type TeamResponse = {
 };
 
 /** Session с раскрытыми участниками. Возвращается `GET /session/{id}/with-teams-and-members` и `POST /session/{id}/join`. */
-export type SessionWithTeamsAndMembersResponse = Omit<SessionResponse, 'teams'> & {
+export type SessionWithTeamsAndMembersResponse = Omit<SessionResponse, 'teams' | 'rounds'> & {
   teams: TeamResponse[];
   members: UserResponse[];
   observers: UserResponse[];
@@ -262,11 +262,7 @@ export type NpcParamsAdaptive = {
 };
 
 export type NpcParams =
-  | NpcParamsFair
-  | NpcParamsSelfish
-  | NpcParamsRandom
-  | NpcParamsVengeful
-  | NpcParamsAdaptive;
+  NpcParamsFair | NpcParamsSelfish | NpcParamsRandom | NpcParamsVengeful | NpcParamsAdaptive;
 
 export type NpcProfileResponse = {
   id: string;

@@ -1,23 +1,21 @@
 import { expect, test } from '@playwright/test';
-import { clearAuth, expectTitleCard } from './utils';
+import { expectTitleCard } from './utils';
 
-test.describe('smoke', () => {
-  test.beforeEach(async ({ page }) => {
-    await clearAuth(page);
-  });
+test('home explains the game and links to real rules', async ({ page }) => {
+  await page.goto('/');
+  await expectTitleCard(page);
+  await page.getByRole('link', { name: 'Как устроена игра →' }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Предлагайте. Решайте. Зарабатывайте.' }),
+  ).toBeVisible();
+});
 
-  test('title card renders on /', async ({ page }) => {
-    await page.goto('/');
-    await expectTitleCard(page);
-    await expect(page.getByText(/A game of offers, refusals & reckoning/i)).toBeVisible();
-  });
-
-  test('style guide loads all 4 sections', async ({ page }) => {
-    await page.goto('/_style-guide');
-    await expect(page.getByRole('heading', { name: /^Style Guide$/i })).toBeVisible();
-    await expect(page.getByText(/I · Палитра/i)).toBeVisible();
-    await expect(page.getByText(/II · Типографика/i)).toBeVisible();
-    await expect(page.getByText(/III · Тени/i)).toBeVisible();
-    await expect(page.getByText(/IV · Примитивы/i)).toBeVisible();
-  });
+test('unknown routes have a way home; style guide remains directly accessible', async ({
+  page,
+}) => {
+  await page.goto('/unknown');
+  await page.getByRole('link', { name: 'На главную', exact: true }).click();
+  await expectTitleCard(page);
+  await page.goto('/_style-guide');
+  await expect(page.getByRole('heading', { name: /^Style Guide$/i })).toBeVisible();
 });

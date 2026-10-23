@@ -1,47 +1,57 @@
-import { Route, Routes, useLocation } from 'react-router';
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { lazy, Suspense } from 'react';
+import { Link, Route, Routes } from 'react-router';
 import { App } from './App';
+import { AppShell } from './components/AppShell';
 import { CreateSession } from './routes/CreateSession';
 import { Lobby } from './routes/Lobby';
-import { Npc } from './routes/Npc';
 import { Register } from './routes/Register';
 import { Session } from './routes/Session';
-import { Stats } from './routes/Stats';
-import { StyleGuide } from './routes/StyleGuide';
-import { easeSolemn } from './lib/motion';
+import { Practice } from './routes/Practice';
+import { Rules } from './routes/Rules';
 
-/**
- * AnimatePresence с ключом по pathname даёт cross-fade при смене route'а.
- * Fade-in новый (250ms ease-solemn) + fade-out старый (150ms linear).
- * Reduced-motion → мгновенный переход без transition.
- */
+const Stats = lazy(() => import('./routes/Stats').then((m) => ({ default: m.Stats })));
+const Npc = lazy(() => import('./routes/Npc').then((m) => ({ default: m.Npc })));
+const StyleGuide = lazy(() =>
+  import('./routes/StyleGuide').then((m) => ({ default: m.StyleGuide })),
+);
+
 export function AnimatedRoutes() {
-  const location = useLocation();
-  const reduce = useReducedMotion();
-
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={location.pathname}
-        {...(reduce
-          ? {}
-          : {
-              initial: { opacity: 0 },
-              animate: { opacity: 1, transition: { duration: 0.25, ease: easeSolemn } },
-              exit: { opacity: 0, transition: { duration: 0.15, ease: 'linear' as const } },
-            })}
+    <AppShell>
+      <Suspense
+        fallback={
+          <p role="status" className="page-container py-12">
+            Загружаем страницу…
+          </p>
+        }
       >
-        <Routes location={location}>
+        <Routes>
           <Route path="/" element={<App />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/practice" element={<Practice />} />
+          <Route path="/rules" element={<Rules />} />
           <Route path="/lobby" element={<Lobby />} />
           <Route path="/lobby/new" element={<CreateSession />} />
           <Route path="/npc" element={<Npc />} />
           <Route path="/session/:id" element={<Session />} />
           <Route path="/session/:id/stats" element={<Stats />} />
           <Route path="/_style-guide" element={<StyleGuide />} />
+          <Route
+            path="*"
+            element={
+              <main className="page-container py-12">
+                <h1 className="text-3xl font-semibold">Страница не найдена</h1>
+                <p className="my-4">
+                  Возможно, в ссылке ошибка. Можно вернуться к играм или попробовать учебный раунд.
+                </p>
+                <Link className="button" to="/">
+                  На главную
+                </Link>
+              </main>
+            }
+          />
         </Routes>
-      </motion.div>
-    </AnimatePresence>
+      </Suspense>
+    </AppShell>
   );
 }

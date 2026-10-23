@@ -1,41 +1,16 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { Link, Navigate } from 'react-router';
 import { Parchment } from '../components/Parchment';
-import { WaxSeal } from '../components/WaxSeal';
+import {
+  NPC_STRATEGIES as STRATEGIES,
+  defaultNpcParams as defaultParams,
+} from '../api/npc-strategies';
 import { InkField } from '../components/InkField';
 import { useAccessToken } from '../api/auth-storage';
 import { useCurrentUser } from '../api/auth-queries';
 import { useCreateNpc, useDeleteNpc, useNpcList } from '../api/npc-queries';
 import { ApiError } from '../api/client';
 import type { NpcParams, NpcProfileResponse, NpcStrategy } from '../api/types';
-
-const STRATEGIES: Array<{
-  value: NpcStrategy;
-  title: string;
-  hint: string;
-}> = [
-  { value: 'FAIR', title: 'Справедливый', hint: 'Предлагает половину. Принимает по порогу.' },
-  { value: 'SELFISH', title: 'Скряга', hint: 'Отдаёт минимум. Соглашается на что угодно > 0.' },
-  { value: 'RANDOM', title: 'Случайный', hint: 'Кидает монету на всё.' },
-  { value: 'VENGEFUL', title: 'Мстительный', hint: 'Помнит отказы, наказывает жадных.' },
-  { value: 'ADAPTIVE', title: 'Учащийся', hint: 'Подстраивает оффер под свой rejectRate.' },
-];
-
-/** Дефолтный `params` для стратегии — синхронизирован с бэком (см. 10-npc.md §NpcParams). */
-function defaultParams(strategy: NpcStrategy): NpcParams {
-  switch (strategy) {
-    case 'FAIR':
-      return { type: 'FAIR', fairnessThreshold: 0.3 };
-    case 'SELFISH':
-      return { type: 'SELFISH', minOffer: 0 };
-    case 'RANDOM':
-      return { type: 'RANDOM', acceptProbability: 0.5 };
-    case 'VENGEFUL':
-      return { type: 'VENGEFUL', baselineFraction: 0.5, punishStep: 1, fairnessThreshold: 0.3 };
-    case 'ADAPTIVE':
-      return { type: 'ADAPTIVE', baselineFraction: 0.5, targetRejectRate: 0.2, slope: 0.5 };
-  }
-}
 
 function ParamNumber({
   label,
@@ -56,9 +31,7 @@ function ParamNumber({
 }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600">
-        {label}
-      </span>
+      <span className="font-mono text-sm text-brass-600">{label}</span>
       <input
         type="number"
         value={value}
@@ -68,9 +41,7 @@ function ParamNumber({
         step={step}
         className="w-full rounded-inset border border-brass-500/40 bg-parchment-200/50 px-3 py-2 font-body text-lg text-ink-950 outline-none focus:border-ember-600"
       />
-      {hint !== undefined && (
-        <span className="font-body text-xs italic text-ink-900/60">{hint}</span>
-      )}
+      {hint !== undefined && <span className="font-body text-xs text-ink-900/70">{hint}</span>}
     </label>
   );
 }
@@ -92,13 +63,13 @@ function ParamsEditor({
           min={0}
           max={1}
           step={0.05}
-          hint="Примет оффер, если он не меньше этой доли от ставки"
+          hint="Примет предложение, если он не меньше этой доли от ставки"
         />
       );
     case 'SELFISH':
       return (
         <ParamNumber
-          label="Минимальный оффер"
+          label="Минимальное предложение"
           value={params.minOffer ?? 0}
           onChange={(v) => onChange({ type: 'SELFISH', minOffer: v })}
           min={0}
@@ -150,7 +121,7 @@ function ParamsEditor({
             min={0}
             max={100}
             step={1}
-            hint="На сколько снижает оффер после отказа"
+            hint="На сколько снижает предложение после отказа"
           />
           <ParamNumber
             label="Порог справедливости"
@@ -188,7 +159,7 @@ function ParamsEditor({
             step={0.05}
           />
           <ParamNumber
-            label="Целевой rejectRate"
+            label="Желаемая доля отказов"
             value={params.targetRejectRate ?? 0.2}
             onChange={(v) =>
               onChange({
@@ -216,54 +187,75 @@ function ParamsEditor({
             min={0}
             max={5}
             step={0.1}
-            hint="Насколько резко меняет оффер, отклоняясь от target"
+            hint="Насколько сильно меняет предложение после ответа"
           />
         </div>
       );
   }
 }
 
-function NpcCard({ npc, onDelete, deleting, deleteError }: {
+function NpcCard({
+  npc,
+  onDelete,
+  deleting,
+  deleteError,
+}: {
   npc: NpcProfileResponse;
   onDelete: () => void;
   deleting: boolean;
   deleteError: string | null;
 }) {
+  const [confirm, setConfirm] = useState(false);
   return (
     <div
       data-testid={`npc-card-${npc.nickname}`}
       className="flex flex-col gap-3 rounded-card border border-brass-500/40 bg-parchment-200/40 p-4"
     >
       <div className="flex items-center gap-3">
-        <WaxSeal size={36} monogram={npc.strategy.charAt(0)} />
         <div className="flex flex-col">
-          <span className="font-display text-sm uppercase tracking-[0.14em] text-ink-950">
-            {npc.nickname}
-          </span>
-          <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600">
-            {npc.strategy}
+          <span className="font-display text-sm text-ink-950">{npc.nickname}</span>
+          <span className="font-mono text-sm text-brass-600">
+            {STRATEGIES.find((s) => s.value === npc.strategy)?.title}
             {npc.seed !== null ? ` · seed ${npc.seed}` : ''}
           </span>
         </div>
       </div>
-      <pre className="overflow-x-auto rounded-inset bg-night-950/5 px-3 py-2 font-mono text-[10px] text-ink-900/80">
-{JSON.stringify(npc.params, null, 2)}
-      </pre>
+      <p className="text-sm text-ink-900/70">
+        {STRATEGIES.find((s) => s.value === npc.strategy)?.hint}
+      </p>
       <div className="flex items-center justify-between">
-        <span className="font-body text-xs italic text-ink-900/50">
+        <span className="font-body text-xs text-ink-900/70">
           {new Date(npc.createdAt).toLocaleString('ru-RU')}
         </span>
         <button
           type="button"
-          onClick={onDelete}
+          onClick={() => setConfirm(true)}
           disabled={deleting}
-          className="min-h-11 rounded-panel border border-blood-500/40 bg-transparent px-3 py-1 font-mono text-[10px] uppercase tracking-[0.3em] text-blood-500 transition hover:bg-blood-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+          className="min-h-11 rounded-panel border border-blood-500/40 bg-transparent px-3 py-1 font-mono text-sm text-blood-500 transition hover:bg-blood-500/10 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {deleting ? 'убираем…' : 'разжаловать'}
+          {deleting ? 'Удаляем…' : 'Удалить'}
         </button>
       </div>
+      {confirm && (
+        <div className="notice">
+          <p>Удалить бота {npc.nickname}? Это действие нельзя отменить.</p>
+          <div className="mt-2 flex flex-wrap gap-3">
+            <button type="button" className="text-link" onClick={() => setConfirm(false)}>
+              Отмена
+            </button>
+            <button
+              type="button"
+              className="button button-secondary"
+              disabled={deleting}
+              onClick={onDelete}
+            >
+              Да, удалить
+            </button>
+          </div>
+        </div>
+      )}
       {deleteError !== null && (
-        <p role="alert" className="font-body text-xs italic text-blood-600">
+        <p role="alert" className="font-body text-xs text-blood-600">
           {deleteError}
         </p>
       )}
@@ -292,7 +284,7 @@ export function Npc() {
   const submit = (e: FormEvent) => {
     e.preventDefault();
     const trimmed = nickname.trim();
-    if (trimmed.length === 0) return;
+    if (trimmed.length < 3 || trimmed.length > 42) return;
     const seed = seedText.trim().length > 0 ? Number(seedText) : null;
     create.mutate(
       { nickname: trimmed, strategy, params, seed },
@@ -314,7 +306,7 @@ export function Npc() {
   const deleteErrorFor = (id: string): string | null => {
     if (deletingId !== id || del.error === null || del.error === undefined) return null;
     if (del.error instanceof ApiError) return del.error.body?.message ?? del.error.message;
-    return 'Не удалось разжаловать';
+    return 'Не удалось удалить бота';
   };
 
   if (token === null) return <Navigate to="/" replace />;
@@ -324,18 +316,11 @@ export function Npc() {
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-8 sm:py-16">
       <header className="mb-8 flex flex-col gap-4 border-b border-brass-500/30 pb-6 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-500 sm:tracking-[0.4em]">
-            Кабинет ведущего
-          </p>
-          <h1 className="mt-2 font-display text-2xl uppercase tracking-[0.16em] text-parchment-100 sm:text-3xl">
-            Отряд ботов
-          </h1>
+          <p className="font-mono text-sm text-brass-600 ">Кабинет ведущего</p>
+          <h1 className="mt-2 font-display text-2xl text-ink-950 sm:text-3xl">Боты</h1>
         </div>
-        <Link
-          to="/lobby"
-          className="font-mono text-[10px] uppercase tracking-[0.3em] text-parchment-300/60 hover:text-ember-400"
-        >
-          ← в лобби
+        <Link to="/lobby" className="font-mono text-sm text-ink-900/70 hover:text-ember-400">
+          ← Все игры
         </Link>
       </header>
 
@@ -344,9 +329,7 @@ export function Npc() {
           <form onSubmit={submit} className="flex flex-col gap-5">
             <div className="flex items-center gap-3">
               <span className="h-px flex-1 bg-brass-500/40" />
-              <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-brass-500 sm:tracking-[0.35em]">
-                Выковать нового
-              </span>
+              <span className="font-mono text-sm text-brass-600 ">Создать бота</span>
               <span className="h-px flex-1 bg-brass-500/40" />
             </div>
 
@@ -355,13 +338,14 @@ export function Npc() {
               placeholder="Bob-Fair"
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
-              hint="Должно быть уникальным"
+              hint="Уникальное имя, от 3 до 42 символов"
+              minLength={3}
+              maxLength={42}
+              required
             />
 
             <fieldset className="flex flex-col gap-2">
-              <legend className="font-mono text-[10px] uppercase tracking-[0.35em] text-brass-600">
-                Стратегия
-              </legend>
+              <legend className="font-mono text-sm text-brass-600">Стратегия</legend>
               <div className="grid grid-cols-1 gap-2">
                 {STRATEGIES.map((s) => {
                   const selected = strategy === s.value;
@@ -380,50 +364,48 @@ export function Npc() {
                         value={s.value}
                         checked={selected}
                         onChange={() => handleStrategy(s.value)}
-                        className="sr-only"
+                        className="mr-2"
                       />
                       <div className="flex items-baseline justify-between gap-2">
-                        <span className="font-display text-sm uppercase tracking-[0.14em] text-ink-950">
-                          {s.title}
-                        </span>
-                        <span className="font-mono text-[9px] uppercase tracking-[0.3em] text-brass-600">
-                          {s.value}
-                        </span>
+                        <span className="font-display text-sm text-ink-950">{s.title}</span>
                       </div>
-                      <p className="mt-0.5 font-body text-xs italic text-ink-900/70">{s.hint}</p>
+                      <p className="mt-0.5 font-body text-xs text-ink-900/70">{s.hint}</p>
                     </label>
                   );
                 })}
               </div>
             </fieldset>
 
-            <div className="flex flex-col gap-2">
-              <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-brass-600">
-                Параметры
-              </span>
-              <ParamsEditor params={params} onChange={setParams} />
-            </div>
+            <details>
+              <summary>Дополнительные настройки</summary>
+              <div className="mt-4 flex flex-col gap-4">
+                <div className="flex flex-col gap-2">
+                  <span className="font-mono text-sm text-brass-600">Параметры</span>
+                  <ParamsEditor params={params} onChange={setParams} />
+                </div>
 
-            <label className="flex flex-col gap-1">
-              <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-brass-600">
-                Seed (опц.)
-              </span>
-              <input
-                type="number"
-                value={seedText}
-                onChange={(e) => setSeedText(e.target.value)}
-                placeholder="напр. 42"
-                className="rounded-inset border border-brass-500/40 bg-parchment-200/50 px-3 py-2 font-body text-lg text-ink-950 outline-none focus:border-ember-600"
-              />
-              <span className="font-body text-xs italic text-ink-900/60">
-                Определяет RANDOM/ADAPTIVE. Пусто — недетерминированно.
-              </span>
-            </label>
-
+                <label className="flex flex-col gap-1">
+                  <span className="font-mono text-sm text-brass-600">
+                    Число для повторяемого поведения (необязательно)
+                  </span>
+                  <input
+                    type="number"
+                    value={seedText}
+                    onChange={(e) => setSeedText(e.target.value)}
+                    placeholder="напр. 42"
+                    className="rounded-inset border border-brass-500/40 bg-parchment-200/50 px-3 py-2 font-body text-lg text-ink-950 outline-none focus:border-ember-600"
+                  />
+                  <span className="font-body text-xs text-ink-900/70">
+                    Одинаковое число позволяет повторить случайное поведение бота. Обычно можно
+                    оставить пустым.
+                  </span>
+                </label>
+              </div>
+            </details>
             {createError !== null && (
               <p
                 role="alert"
-                className="rounded-inset border border-blood-500/40 bg-blood-500/10 px-3 py-2 font-body text-sm italic text-blood-600"
+                className="rounded-inset border border-blood-500/40 bg-blood-500/10 px-3 py-2 font-body text-sm text-blood-600"
               >
                 {createError}
               </p>
@@ -431,10 +413,10 @@ export function Npc() {
 
             <button
               type="submit"
-              disabled={create.isPending || nickname.trim().length === 0}
-              className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile min-h-11 px-6 py-2 font-display text-sm uppercase tracking-[0.2em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50 sm:tracking-[0.24em]"
+              disabled={create.isPending || nickname.trim().length < 3}
+              className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile min-h-11 px-6 py-2 font-display text-sm text-night-950 transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50 "
             >
-              {create.isPending ? 'куём…' : 'Выковать'}
+              {create.isPending ? 'Создаём…' : 'Создать бота'}
             </button>
           </form>
         </Parchment>
@@ -443,19 +425,15 @@ export function Npc() {
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
               <span className="h-px flex-1 bg-brass-500/40" />
-              <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-brass-500">
-                Готовые
-              </span>
+              <span className="font-mono text-sm text-brass-600">Готовые</span>
               <span className="h-px flex-1 bg-brass-500/40" />
             </div>
-            {list.isLoading && (
-              <p className="font-body italic text-ink-900/60">Смотрим свитки…</p>
-            )}
+            {list.isLoading && <p className="font-body text-ink-900/70">Загружаем ботов…</p>}
             {list.isError && (
-              <p className="font-body italic text-blood-600">Не удалось получить список.</p>
+              <p className="font-body text-blood-600">Не удалось получить список.</p>
             )}
             {!list.isLoading && !list.isError && (list.data ?? []).length === 0 && (
-              <p className="font-body italic text-ink-900/60">
+              <p className="font-body text-ink-900/70">
                 Отряд пуст. Выкуй первого — и он окажется здесь.
               </p>
             )}

@@ -54,10 +54,10 @@ colima start          # или Docker Desktop
 | POST | `/session` | ADMIN | `CreateSessionRequest` | 201 `SessionWithTeamsAndMembersResponse` | 400, 403 |
 | GET | `/session` | auth | `?s=&state=&sessionType=&openToConnect=&page=0&pageSize=30` | `Page<SessionResponse>` | — |
 | GET | `/session/{id}` | auth | — | `SessionResponse` | 400 (не UUID), 404 |
-| GET | `/session/{id}/with-teams-and-members` | auth | — | `SessionWithTeamsAndMembersResponse` | 400, 404 |
+| GET | `/session/{id}/with-teams-and-members` | публичный | — | `SessionWithTeamsAndMembersResponse` | 400, 404 |
 | GET | `/session/{id}/current-round` | auth | — | `RoundResponse` (c hints `myRole`, `myPendingActions`) | 404 (нет текущего раунда) |
 | GET | `/session/{id}/rounds` | auth | — | `List<RoundResponse>` | 404 |
-| POST | `/session/{id}/join` | ADMIN, PLAYER | `?teamId=<uuid>` (обязателен для TEAM_BATTLE) | `SessionWithTeamsAndMembersResponse` | 409 (закрыта, полна, вы админ) |
+| POST | `/session/{id}/join` | ADMIN, PLAYER | `?teamId=<uuid>` (обязателен для TEAM_BATTLE) | `SessionWithTeamsAndMembersResponse` | 409 (закрыта, полна, команда полна, вы админ) |
 | POST | `/session/{id}/join/observer` | auth | — | `SessionWithTeamsAndMembersResponse` | 409 (вы админ) |
 
 ## 5. Statistics endpoints
@@ -216,3 +216,11 @@ CREATED --admin start--> WAIT_OFFERS
 ## 12. DTO / типы
 
 Полный каталог типов — [07-types.md](07-types.md).
+
+## Клиентское восстановление состояния (T-025)
+
+`with-teams-and-members` содержит `currentRound`, но не `rounds`. Для восстановления счёта клиент загружает участников и сумму игры, CSV сделок и авторизованный `GET /session/{id}/rounds`. Принятые предложения дают автору `roundSum - amount`, получателю `amount`; остальные дают ноль. Завершённые раунды определяются по фазам `ALL_DECISIONS_RECEIVED`/`FINISHED`. После реконнекта кэш инвалидируется; резервный опрос работает каждые 10 секунд.
+
+`POST /session/{id}/npcs` принимает максимум 100 ботов за запрос. Для двух команд клиент предлагает чётное число мест и сбалансированное заполнение. Последний автоматически сыгранный раунд и прерванный раунд завершаются/продолжаются ведущим вручную.
+
+Backend T-107 публикует игровые WebSocket-события после commit. Это устраняет окно, когда уведомление уже получено, а GET текущего раунда ещё возвращает 404/старое состояние.

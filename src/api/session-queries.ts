@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from './client';
+import { fetchSessionStats } from './stats-queries';
+import { computeLeaderboard } from '../routes/Stats.aggregations';
 import { useAccessToken } from './auth-storage';
 import type {
   CreateSessionRequest,
@@ -12,8 +14,7 @@ import type {
 
 export const sessionKeys = {
   all: ['session'] as const,
-  openLobby: (page: number, size: number) =>
-    ['session', 'open-lobby', page, size] as const,
+  openLobby: (page: number, size: number) => ['session', 'open-lobby', page, size] as const,
   openLobbyAll: ['session', 'open-lobby'] as const,
   details: (id: string) => ['session', 'details', id] as const,
   currentRound: (id: string) => ['session', 'current-round', id] as const,
@@ -37,6 +38,7 @@ export function useOpenSessions(page = 0, size = 8) {
     // Лобби живое — обновляем чаще обычного.
     staleTime: 10_000,
     refetchOnMount: 'always',
+    refetchInterval: 10_000,
   });
 }
 
@@ -45,7 +47,7 @@ export function useCreateSession() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: CreateSessionRequest) =>
-      apiFetch<SessionResponse>('/session', { method: 'POST', body }),
+      apiFetch<SessionWithTeamsAndMembersResponse>('/session', { method: 'POST', body }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: sessionKeys.openLobbyAll });
     },
@@ -91,22 +93,47 @@ export function useSessionDetails(id: string | undefined) {
       ),
     enabled: id !== undefined && id.length > 0,
     staleTime: 5_000,
+    refetchInterval: 10_000,
   });
 }
 
-/**
- * Кумулятивный счёт сессии. Данные приходят только через WS
- * (`/topic/session/{id}/scoreUpdated`); REST-endpoint'а нет — если
- * mount произошёл до первого `scoreUpdated`, `data` будет undefined.
- * MVP-компромисс: refresh страницы посреди партии обнуляет счёт.
- */
+/** REST restores scores after refresh; WebSocket updates the same cache between requests. */
 export function useSessionScore(id: string | undefined) {
   const token = useAccessToken();
-  return useQuery<SessionScoreDto | undefined>({
+  return useQuery<SessionScoreDto>({
     queryKey: sessionKeys.score(id ?? ''),
-    queryFn: () => Promise.resolve(undefined),
-    enabled: token !== null && id !== undefined && id.length > 0,
-    staleTime: Infinity,
+    queryFn: async () => {
+      const [session, rows, rounds] = await Promise.all([
+        apiFetch<SessionWithTeamsAndMembersResponse>(
+          `/session/${encodeURIComponent(id ?? '')}/with-teams-and-members`,
+          { withAuth: false },
+        ),
+        fetchSessionStats(id ?? ''),
+        apiFetch<RoundResponse[]>(`/session/${encodeURIComponent(id ?? '')}/rounds`),
+      ]);
+      const scores = new Map(
+        computeLeaderboard(rows, session.config.roundSum).map((p) => [p.userId, p.totalScore]),
+      );
+      return {
+        roundSum: session.config.roundSum,
+        roundsCompleted: rounds.filter(
+          (r) => r.roundPhase === 'FINISHED' || r.roundPhase === 'ALL_DECISIONS_RECEIVED',
+        ).length,
+        players: session.members.map((p) => ({
+          userId: p.id,
+          nickname: p.nickname,
+          score: scores.get(p.id) ?? 0,
+        })),
+        teams: session.teams.map((t) => ({
+          teamId: t.id,
+          name: t.name,
+          score: t.members.reduce((sum, p) => sum + (scores.get(p.id) ?? 0), 0),
+        })),
+      };
+    },
+    enabled: token !== null && Boolean(id),
+    staleTime: 5_000,
+    refetchInterval: 10_000,
   });
 }
 
@@ -119,10 +146,9 @@ export function useCurrentRound(id: string | undefined, enabled = true) {
   return useQuery({
     queryKey: sessionKeys.currentRound(id ?? ''),
     queryFn: () =>
-      apiFetch<RoundResponse>(
-        `/session/${encodeURIComponent(id ?? '')}/current-round`,
-      ),
+      apiFetch<RoundResponse>(`/session/${encodeURIComponent(id ?? '')}/current-round`),
     enabled: enabled && token !== null && id !== undefined && id.length > 0,
     staleTime: 5_000,
+    refetchInterval: 10_000,
   });
 }

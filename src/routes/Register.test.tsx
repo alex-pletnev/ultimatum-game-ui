@@ -13,14 +13,18 @@ function jsonResponse(status: number, body: unknown): Response {
   });
 }
 
-function renderRegister() {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+function renderRegister(entry = '/register') {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={['/register']}>
+      <MemoryRouter initialEntries={[entry]}>
         <Routes>
           <Route path="/register" element={<Register />} />
-          <Route path="/" element={<div>home</div>} />
+          <Route path="/lobby" element={<div>games</div>} />
+          <Route path="/lobby/new" element={<div>create</div>} />
+          <Route path="/session/:id" element={<div>invitation</div>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -41,14 +45,14 @@ describe('Register', () => {
     renderRegister();
 
     await user.type(screen.getByLabelText(/Имя/i), 'ab');
-    await user.click(screen.getByRole('button', { name: /Присесть за стол/i }));
+    await user.click(screen.getByRole('button', { name: /Продолжить/i }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/короче/i);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/3/);
     // fetch не должен был быть вызван — валидация клиентская
     expect(vi.mocked(fetch)).not.toHaveBeenCalled();
   });
 
-  it('submits with valid nickname + default PLAYER role, stores tokens, navigates to /', async () => {
+  it('submits with valid nickname + default PLAYER role, stores tokens, navigates to games', async () => {
     const fetchMock = vi.mocked(fetch);
     fetchMock.mockResolvedValueOnce(
       jsonResponse(200, { accessToken: 'acc-1', refreshToken: 'ref-1', expiresIn: 900 }),
@@ -58,10 +62,10 @@ describe('Register', () => {
     renderRegister();
 
     await user.type(screen.getByLabelText(/Имя/i), 'Alice');
-    await user.click(screen.getByRole('button', { name: /Присесть за стол/i }));
+    await user.click(screen.getByRole('button', { name: /Продолжить/i }));
 
     // Wait for navigation
-    expect(await screen.findByText('home')).toBeInTheDocument();
+    expect(await screen.findByText('games')).toBeInTheDocument();
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0]!;
@@ -81,12 +85,34 @@ describe('Register', () => {
     renderRegister();
 
     await user.type(screen.getByLabelText(/Имя/i), 'GameMaster');
-    await user.click(screen.getByRole('radio', { name: /Ведущий/i }));
-    await user.click(screen.getByRole('button', { name: /Присесть за стол/i }));
+    await user.click(screen.getByRole('radio', { name: /Создать игру/i }));
+    await user.click(screen.getByRole('button', { name: /Продолжить/i }));
 
-    await screen.findByText('home');
+    await screen.findByText('create');
     const init = fetchMock.mock.calls[0]![1]!;
     expect(init.body).toBe(JSON.stringify({ nickname: 'GameMaster', role: 'ADMIN' }));
+  });
+
+  it('preserves a session invitation after registration', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      jsonResponse(200, { accessToken: 'a', refreshToken: 'r', expiresIn: 900 }),
+    );
+    const user = userEvent.setup();
+    renderRegister('/register?next=%2Fsession%2Finvited');
+    await user.type(screen.getByLabelText(/Имя/i), 'Guest');
+    await user.click(screen.getByRole('button', { name: /Продолжить/i }));
+    expect(await screen.findByText('invitation')).toBeInTheDocument();
+  });
+
+  it('ignores an external redirect', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      jsonResponse(200, { accessToken: 'a', refreshToken: 'r', expiresIn: 900 }),
+    );
+    const user = userEvent.setup();
+    renderRegister('/register?next=https://example.com');
+    await user.type(screen.getByLabelText(/Имя/i), 'Guest');
+    await user.click(screen.getByRole('button', { name: /Продолжить/i }));
+    expect(await screen.findByText('games')).toBeInTheDocument();
   });
 
   it('shows backend 400 message', async () => {
@@ -105,7 +131,7 @@ describe('Register', () => {
     renderRegister();
 
     await user.type(screen.getByLabelText(/Имя/i), 'Alice');
-    await user.click(screen.getByRole('button', { name: /Присесть за стол/i }));
+    await user.click(screen.getByRole('button', { name: /Продолжить/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/имя уже занято/i);
   });

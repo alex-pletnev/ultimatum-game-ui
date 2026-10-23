@@ -29,8 +29,7 @@ export const statsKeys = {
 
 function toRow(raw: Record<string, string>): StatsRow {
   const acceptedRaw = raw.accepted?.trim().toLowerCase();
-  const accepted =
-    acceptedRaw === 'true' ? true : acceptedRaw === 'false' ? false : null;
+  const accepted = acceptedRaw === 'true' ? true : acceptedRaw === 'false' ? false : null;
   return {
     offerId: raw.offerId ?? '',
     roundNumber: Number(raw.roundNumber ?? 0),
@@ -53,14 +52,13 @@ function toRow(raw: Record<string, string>): StatsRow {
 export function useSessionStats(id: string | undefined) {
   return useQuery<StatsRow[]>({
     queryKey: statsKeys.session(id ?? ''),
-    queryFn: async () => {
-      const csv = await apiFetchText(
-        `/statistics/${encodeURIComponent(id ?? '')}/csv`,
-        { withAuth: false },
-      );
-      return parseCsv(csv).map(toRow);
-    },
+    queryFn: () => fetchSessionStats(id ?? ''),
     enabled: id !== undefined && id.length > 0,
     staleTime: 5_000,
   });
+}
+
+export async function fetchSessionStats(id: string): Promise<StatsRow[]> {
+  const csv = await apiFetchText(`/statistics/${encodeURIComponent(id)}/csv`, { withAuth: false });
+  return parseCsv(csv).map(toRow);
 }

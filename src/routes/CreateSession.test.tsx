@@ -62,7 +62,7 @@ function renderCreate() {
     <QueryClientProvider client={qc}>
       <MemoryRouter initialEntries={['/lobby/new']}>
         <Routes>
-          <Route path="/" element={<div>home</div>} />
+          <Route path="/register" element={<div>home</div>} />
           <Route path="/lobby" element={<div>lobby</div>} />
           <Route path="/lobby/new" element={<CreateSession />} />
           <Route path="/session/:id" element={<div>session-page</div>} />
@@ -101,22 +101,20 @@ describe('CreateSession', () => {
 
     // Дождаться, что форма отрисовалась (после загрузки user)
     await waitFor(() =>
-      expect(screen.getByRole('heading', { name: /Учредить партию/i })).toBeInTheDocument(),
+      expect(screen.getByRole('heading', { name: /Создать игру/i })).toBeInTheDocument(),
     );
 
-    await user.type(screen.getByLabelText(/Название партии/i), 'Круг наивных');
-    await user.click(screen.getByRole('button', { name: /Огласить партию/i }));
+    await user.type(screen.getByLabelText(/Название игры/i), 'Круг наивных');
+    await user.click(screen.getByRole('button', { name: /Создать игру/i }));
 
     // Redirect на созданную сессию (/session/:id)
     await waitFor(() => expect(screen.getByText('session-page')).toBeInTheDocument());
 
     // Проверить, что был вызов POST /session с правильным body
-    const postCall = vi
-      .mocked(fetch)
-      .mock.calls.find(([url, init]) => {
-        const u = typeof url === 'string' ? url : url?.toString() ?? '';
-        return u.endsWith('/session') && init?.method === 'POST';
-      });
+    const postCall = vi.mocked(fetch).mock.calls.find(([url, init]) => {
+      const u = typeof url === 'string' ? url : (url?.toString() ?? '');
+      return u.endsWith('/session') && init?.method === 'POST';
+    });
     expect(postCall).toBeDefined();
     const body = JSON.parse(postCall![1]!.body as string);
     expect(body).toMatchObject({
@@ -132,17 +130,32 @@ describe('CreateSession', () => {
     });
   });
 
+  it('creates a named game with one click and keeps advanced settings collapsed', async () => {
+    mockUserWith('ADMIN');
+    const user = userEvent.setup();
+    renderCreate();
+    await screen.findByRole('heading', { name: /Создать игру/i });
+    expect(screen.getByText('Дополнительные настройки').closest('details')).not.toHaveAttribute(
+      'open',
+    );
+    await user.click(screen.getByRole('button', { name: /Создать игру/i }));
+    expect(await screen.findByText('session-page')).toBeInTheDocument();
+    const call = vi.mocked(fetch).mock.calls.find(([, init]) => init?.method === 'POST');
+    expect(JSON.parse(call![1]!.body as string).displayName).toBe('Новая игра');
+  });
+
   it('shows numTeams stepper only for TEAM_BATTLE', async () => {
     mockUserWith('ADMIN');
     const user = userEvent.setup();
     renderCreate();
 
     await waitFor(() =>
-      expect(screen.getByRole('heading', { name: /Учредить партию/i })).toBeInTheDocument(),
+      expect(screen.getByRole('heading', { name: /Создать игру/i })).toBeInTheDocument(),
     );
-    expect(screen.queryByText(/^Команд$/i)).toBeNull();
+    expect(screen.queryByText(/Две команды: перед/)).toBeNull();
 
-    await user.click(screen.getByRole('radio', { name: /Битва команд/i }));
-    expect(screen.getByText(/^Команд$/i)).toBeInTheDocument();
+    await user.click(screen.getByText('Дополнительные настройки'));
+    await user.click(screen.getByRole('radio', { name: /Команды/i }));
+    expect(screen.getByText(/Две команды: перед/)).toBeInTheDocument();
   });
 });

@@ -1,190 +1,140 @@
 import { useState } from 'react';
 import { Link, Navigate } from 'react-router';
+import { readRecentGame } from '../api/recent-game';
 import { useAccessToken } from '../api/auth-storage';
 import { useCurrentUser } from '../api/auth-queries';
 import { useOpenSessions } from '../api/session-queries';
-
-const PAGE_SIZE = 8;
 import { SessionCard } from '../components/SessionCard';
 import { Parchment } from '../components/Parchment';
-import { WaxSeal } from '../components/WaxSeal';
-
-function LobbyHeader({ canCreate }: { canCreate: boolean }) {
-  return (
-    <header className="mb-8 flex flex-col gap-4 border-b border-brass-500/30 pb-6 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-500 sm:tracking-[0.4em]">
-          Собрание играющих
-        </p>
-        <h1 className="mt-2 font-display text-2xl uppercase tracking-[0.16em] text-parchment-100 sm:text-3xl">
-          Открытые партии
-        </h1>
-      </div>
-      <div className="flex flex-col items-start gap-3 sm:items-end">
-        {canCreate && (
-          <div className="flex items-center gap-3">
-            <Link
-              to="/npc"
-              className="font-mono text-[10px] uppercase tracking-[0.3em] text-parchment-300/60 hover:text-ember-400"
-            >
-              → отряд ботов
-            </Link>
-            <Link
-              to="/lobby/new"
-              className="inline-flex items-center justify-center rounded-panel border border-ember-600/40 bg-ember-500 press-tactile min-h-11 px-5 py-2 font-display text-xs uppercase tracking-[0.2em] text-night-950 shadow-[0_3px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] sm:tracking-[0.24em]"
-            >
-              Учредить партию
-            </Link>
-          </div>
-        )}
-        <Link
-          to="/"
-          className="font-mono text-[10px] uppercase tracking-[0.3em] text-parchment-300/60 hover:text-ember-400"
-        >
-          ← вернуться ко входу
-        </Link>
-      </div>
-    </header>
-  );
-}
-
-function SkeletonCard() {
-  return (
-    <div
-      aria-hidden
-      className="h-64 animate-pulse rounded-card bg-parchment-100/40"
-      style={{ boxShadow: 'var(--shadow-parchment)' }}
-    />
-  );
-}
-
-function EmptyState() {
-  return (
-    <Parchment className="mx-auto max-w-lg text-center">
-      <div className="flex flex-col items-center gap-4">
-        <WaxSeal size={72} monogram="§" />
-        <h2 className="font-display text-xl uppercase tracking-[0.16em] text-ink-950">
-          Стол пуст
-        </h2>
-        <p className="font-body italic text-ink-900/80">
-          Ни одной открытой партии сейчас нет. Дождись, пока ведущий учредит новую —
-          либо стань ведущим сам.
-        </p>
-      </div>
-    </Parchment>
-  );
-}
-
-function ErrorState({ retry }: { retry: () => void }) {
-  return (
-    <Parchment className="mx-auto max-w-lg text-center">
-      <div className="flex flex-col items-center gap-4">
-        <WaxSeal size={72} monogram="!" />
-        <h2 className="font-display text-xl uppercase tracking-[0.16em] text-blood-500">
-          Стол не отвечает
-        </h2>
-        <p className="font-body italic text-ink-900/80">
-          Не удалось получить перечень партий. Проверь связь с backend'ом (см. `docs/05-api.md`).
-        </p>
-        <button
-          type="button"
-          onClick={retry}
-          className="inline-flex items-center justify-center rounded-panel border border-ember-600/40 bg-ember-500 press-tactile min-h-11 px-6 py-2 font-display text-xs uppercase tracking-[0.2em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] sm:tracking-[0.24em]"
-        >
-          Постучать снова
-        </button>
-      </div>
-    </Parchment>
-  );
-}
-
-function PaginationControls({
-  page,
-  totalPages,
-  totalElements,
-  onPage,
-}: {
-  page: number;
-  totalPages: number;
-  totalElements: number;
-  onPage: (next: number) => void;
-}) {
-  if (totalPages <= 1) return null;
-  const canPrev = page > 0;
-  const canNext = page + 1 < totalPages;
-  return (
-    <nav
-      aria-label="Пагинация лобби"
-      className="mt-8 flex items-center justify-center gap-4 font-mono text-[10px] uppercase tracking-[0.3em] text-parchment-300/70"
-    >
-      <button
-        type="button"
-        onClick={() => canPrev && onPage(page - 1)}
-        disabled={!canPrev}
-        className="rounded-panel border border-brass-500/40 px-3 py-1.5 transition hover:border-ember-500 hover:text-ember-400 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-brass-500/40 disabled:hover:text-parchment-300/70"
-      >
-        ← новее
-      </button>
-      <span className="text-parchment-300/80">
-        {page + 1} / {totalPages} · всего {totalElements}
-      </span>
-      <button
-        type="button"
-        onClick={() => canNext && onPage(page + 1)}
-        disabled={!canNext}
-        className="rounded-panel border border-brass-500/40 px-3 py-1.5 transition hover:border-ember-500 hover:text-ember-400 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-brass-500/40 disabled:hover:text-parchment-300/70"
-      >
-        старее →
-      </button>
-    </nav>
-  );
-}
 
 export function Lobby() {
   const token = useAccessToken();
   const { data: user } = useCurrentUser();
   const [page, setPage] = useState(0);
-  const { data, isLoading, isError, refetch } = useOpenSessions(page, PAGE_SIZE);
-
-  if (token === null) return <Navigate to="/" replace />;
-
-  // Backend не гарантирует сортировку — упорядочиваем свежие сверху для UX.
+  const { data, isLoading, isError, isFetching, refetch } = useOpenSessions(page, 8);
+  if (token === null) return <Navigate to="/register" replace />;
   const sessions = [...(data?.content ?? [])].sort((a, b) =>
     b.createdAt.localeCompare(a.createdAt),
   );
   const canCreate = user?.role === 'ADMIN';
-
+  const recent = user ? readRecentGame(user.id) : null;
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-8 sm:py-16">
-      <LobbyHeader canCreate={canCreate} />
-
+    <main className="page-container py-10">
+      <header className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+        <div>
+          <span className="eyebrow">
+            {user ? `Здравствуйте, ${user.nickname}` : 'Вместе интереснее'}
+          </span>
+          <h1 className="mt-2 text-3xl font-semibold">Игры</h1>
+          <p className="mt-3 text-ink-900/70">
+            Выберите игру ниже или откройте ссылку от ведущего.
+          </p>
+        </div>
+        {canCreate && (
+          <Link className="button" to="/lobby/new">
+            Создать игру
+          </Link>
+        )}
+      </header>
+      {recent && (
+        <aside className="notice mb-6 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm">Ваша последняя игра</p>
+            <strong className="break-all">{recent.name}</strong>
+          </div>
+          <Link
+            className="button button-secondary"
+            to={`/session/${recent.id}${recent.finished ? '/stats' : ''}`}
+          >
+            {recent.finished ? 'Посмотреть результаты' : 'Вернуться в игру'}
+          </Link>
+        </aside>
+      )}
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-semibold">Открытые игры</h2>
+        <button className="text-link" disabled={isFetching} onClick={() => void refetch()}>
+          {isFetching ? 'Обновляем…' : 'Обновить список'}
+        </button>
+      </div>
       {isLoading && (
-        <div className="grid gap-6 md:grid-cols-2">
-          {[0, 1, 2, 3].map((i) => (
-            <SkeletonCard key={i} />
+        <p role="status" className="notice">
+          Загружаем игры…
+        </p>
+      )}
+      {isError && (
+        <Parchment>
+          <h2 className="text-xl font-semibold">Не удалось загрузить игры</h2>
+          <p className="my-4">Проверьте подключение к интернету и попробуйте ещё раз.</p>
+          <button className="button button-secondary" onClick={() => void refetch()}>
+            Повторить
+          </button>
+        </Parchment>
+      )}
+      {!isLoading && !isError && sessions.length === 0 && (
+        <Parchment className="flex flex-col items-start gap-4">
+          <h2 className="text-2xl font-semibold">Пока нет открытых игр</h2>
+          <p>
+            {page > 0
+              ? 'На этой странице больше нет игр. Вернитесь к началу списка.'
+              : canCreate
+                ? 'Создайте первую и пригласите друзей. Свободные места можно заполнить ботами.'
+                : 'Попросите ведущего создать игру и прислать ссылку. Список обновляется автоматически.'}
+          </p>
+          {page > 0 ? (
+            <button className="button" onClick={() => setPage(0)}>
+              К началу списка
+            </button>
+          ) : (
+            <Link className="button button-secondary" to={canCreate ? '/lobby/new' : '/practice'}>
+              {canCreate ? 'Создать игру' : 'Пока попробовать учебный раунд'}
+            </Link>
+          )}
+        </Parchment>
+      )}
+      {!isLoading && !isError && sessions.length > 0 && (
+        <div className="grid gap-5 md:grid-cols-2">
+          {sessions.map((s) => (
+            <SessionCard key={s.id} session={s} currentUser={user} />
           ))}
         </div>
       )}
-
-      {isError && <ErrorState retry={() => void refetch()} />}
-
-      {!isLoading && !isError && sessions.length === 0 && <EmptyState />}
-
-      {!isLoading && !isError && sessions.length > 0 && (
-        <>
-          <div className="grid gap-6 md:grid-cols-2">
-            {sessions.map((s) => (
-              <SessionCard key={s.id} session={s} currentUser={user} />
-            ))}
-          </div>
-          <PaginationControls
-            page={page}
-            totalPages={data?.totalPages ?? 1}
-            totalElements={data?.totalElements ?? sessions.length}
-            onPage={setPage}
-          />
-        </>
+      {(page > 0 || (data?.totalPages ?? 0) > 1) && (
+        <nav
+          aria-label="Страницы игр"
+          className="mt-6 flex flex-wrap items-center justify-center gap-4"
+        >
+          <button
+            className="button button-secondary"
+            disabled={page === 0}
+            onClick={() => setPage(page - 1)}
+          >
+            Назад
+          </button>
+          <span>
+            Страница {page + 1} из {Math.max(page + 1, data?.totalPages ?? 1)}
+          </span>
+          <button
+            className="button button-secondary"
+            disabled={page + 1 >= (data?.totalPages ?? 1)}
+            onClick={() => setPage(page + 1)}
+          >
+            Далее
+          </button>
+        </nav>
       )}
-    </div>
+      <aside className="mt-8 flex flex-wrap gap-5 text-sm">
+        <Link className="text-link" to="/rules">
+          Как играть
+        </Link>
+        <Link className="text-link" to="/practice">
+          Учебный раунд
+        </Link>
+        {canCreate && (
+          <Link className="text-link" to="/npc">
+            Настроить ботов
+          </Link>
+        )}
+      </aside>
+    </main>
   );
 }

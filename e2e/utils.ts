@@ -112,5 +112,5 @@ export async function openContextWithToken(
 /** Сокращённый sanity-check: страница загружена, нет console-ошибок и заголовок совпадает. */
 export async function expectTitleCard(page: Page): Promise<void> {
   await expect(page.getByRole('heading', { name: /^Ultimatum$/i })).toBeVisible();
-  await expect(page.getByRole('link', { name: /Присесть за стол/i })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Попробовать без регистрации/i })).toBeVisible();
 }

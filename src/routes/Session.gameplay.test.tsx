@@ -2,12 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import type { Client } from '@stomp/stompjs';
 import { StompContext } from '../api/ws/stomp-context';
-import {
-  AbortRoundButton,
-  DecisionPhasePanel,
-  OfferPhasePanel,
-  RoundResultPanel,
-} from './Session';
+import { AbortRoundButton, DecisionPhasePanel, OfferPhasePanel, RoundResultPanel } from './Session';
 import type { RoundResponse, SessionScoreDto, UserResponse } from '../api/types';
 
 function wrapWithClient(publish: ReturnType<typeof vi.fn>) {
@@ -24,9 +19,7 @@ const user = (id: string, nickname: string): UserResponse => ({
   createdAt: '2026-07-16T10:00:00Z',
 });
 
-const baseRound = (
-  overrides: Partial<RoundResponse> = {},
-): RoundResponse => ({
+const baseRound = (overrides: Partial<RoundResponse> = {}): RoundResponse => ({
   id: 'r-1',
   roundNumber: 1,
   roundPhase: 'WAIT_OFFERS',
@@ -63,7 +56,7 @@ describe('OfferPhasePanel', () => {
     expect(slider.value).toBe('50');
 
     fireEvent.change(slider, { target: { value: '70' } });
-    fireEvent.click(screen.getByRole('button', { name: /Огласить сделку/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Предложить 70/i }));
 
     expect(publish).toHaveBeenCalledWith({
       destination: '/app/session/s-1/offer.create',
@@ -94,7 +87,7 @@ describe('OfferPhasePanel', () => {
       { wrapper: wrapWithClient(vi.fn()) },
     );
 
-    expect(screen.getByText(/предложение занесено/i)).toBeInTheDocument();
+    expect(screen.getByText(/Предложение отправлено/i)).toBeInTheDocument();
     expect(screen.getByText(/Собрано 1 \/ 3/i)).toBeInTheDocument();
   });
 });
@@ -125,9 +118,9 @@ describe('DecisionPhasePanel', () => {
     );
 
     expect(screen.getByText(/proposer1/i)).toBeInTheDocument();
-    expect(screen.getByText(/30/)).toBeInTheDocument();
+    expect(screen.getByTestId('assigned-offer-amount')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /Согласиться/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Принять/i }));
 
     expect(publish).toHaveBeenCalledWith({
       destination: '/app/session/s-1/make.decision',
@@ -160,7 +153,7 @@ describe('DecisionPhasePanel', () => {
       { wrapper: wrapWithClient(publish) },
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /Разбить сделку/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Отклонить/i }));
 
     expect(publish).toHaveBeenCalledWith({
       destination: '/app/session/s-1/make.decision',
@@ -199,7 +192,7 @@ describe('DecisionPhasePanel', () => {
       { wrapper: wrapWithClient(vi.fn()) },
     );
 
-    expect(screen.getByText(/Твой ответ занесён/i)).toBeInTheDocument();
+    expect(screen.getByText(/Ответ отправлен/i)).toBeInTheDocument();
     expect(screen.getByText(/Решено 1 \/ 4/i)).toBeInTheDocument();
   });
 });
@@ -232,7 +225,7 @@ describe('RoundResultPanel', () => {
     expect(screen.getByText(/Сыграно раундов: 2/i)).toBeInTheDocument();
     // Оба игрока видны, alice отмечена «· ты».
     expect(screen.getByText(/alice · ты/i)).toBeInTheDocument();
-    expect(screen.getByText(/^bob$/i)).toBeInTheDocument();
+    expect(screen.getByText(/bob/i)).toBeInTheDocument();
     // Non-admin — кнопки нет.
     expect(screen.queryByRole('button')).toBeNull();
   });
@@ -319,6 +312,8 @@ describe('AbortRoundButton', () => {
       wrapper: wrapWithClient(publish),
     });
     fireEvent.click(screen.getByRole('button', { name: /Прервать раунд/i }));
+    expect(publish).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: /Да, прервать/i }));
     expect(publish).toHaveBeenCalledWith({
       destination: '/app/session/s-1/round.abort',
       body: '',

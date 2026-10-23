@@ -37,6 +37,7 @@ export function createStompClient(
       });
       handlers.onConnect?.();
     },
+    onWebSocketClose: () => handlers.onDisconnect?.(),
     onDisconnect: () => {
       handlers.onDisconnect?.();
     },

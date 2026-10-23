@@ -15,14 +15,10 @@ export function useStompSend(): (destination: string, body?: unknown) => void {
   return useCallback(
     (destination: string, body?: unknown) => {
       if (client === null || !client.connected) {
-        throw new Error(`STOMP не подключен — cannot send to ${destination}`);
+        throw new Error('Сервер не подключен. Дождитесь восстановления соединения.');
       }
       const payload =
-        body === undefined
-          ? ''
-          : typeof body === 'string'
-            ? body
-            : JSON.stringify(body);
+        body === undefined ? '' : typeof body === 'string' ? body : JSON.stringify(body);
       client.publish({ destination, body: payload });
     },
     [client],

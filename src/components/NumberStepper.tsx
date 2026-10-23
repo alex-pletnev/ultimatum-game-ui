@@ -1,9 +1,4 @@
-import { useId } from 'react';
-
-/*
- * Number-stepper: − / +. Не HTML `<input type="number">` — на iOS/Safari он
- * поднимает нативную клавиатуру и портит стилистику. Пергамент и латунь.
- */
+import { useId, useEffect, useState } from 'react';
 
 type Props = {
   label: string;
@@ -17,57 +12,61 @@ type Props = {
 
 export function NumberStepper({ label, value, onChange, min, max, step = 1, hint }: Props) {
   const id = useId();
-  const decId = `${id}-dec`;
-  const incId = `${id}-inc`;
-
-  const clamp = (n: number): number => Math.max(min, Math.min(max, n));
-  const dec = () => onChange(clamp(value - step));
-  const inc = () => onChange(clamp(value + step));
-
+  const [draft, setDraft] = useState(String(value));
+  useEffect(() => setDraft(String(value)), [value]);
+  const clamp = (n: number) => Math.max(min, Math.min(max, Math.round(n)));
   return (
     <div className="flex flex-col gap-2">
-      <span id={id} className="font-mono text-[10px] uppercase tracking-[0.35em] text-brass-600">
+      <label htmlFor={id} className="font-semibold">
         {label}
-      </span>
-      <div
-        role="group"
-        aria-labelledby={id}
-        className="flex items-center gap-3 rounded-inset border border-brass-500/40 bg-parchment-50/50 px-4 py-2"
-      >
+      </label>
+      <div className="flex items-center gap-3 rounded-panel border border-brass-500/40 bg-parchment-50 p-2">
         <button
-          id={decId}
           type="button"
           aria-label={`уменьшить ${label}`}
-          onClick={dec}
+          onClick={() => onChange(clamp(value - step))}
           disabled={value <= min}
-          className="font-display text-2xl leading-none text-ink-950 transition hover:text-ember-600 disabled:cursor-not-allowed disabled:opacity-30"
+          className="w-12 shrink-0 rounded-inset text-2xl hover:bg-parchment-200"
         >
           −
         </button>
-        <span
-          aria-live="polite"
-          aria-atomic="true"
-          aria-valuemin={min}
-          aria-valuemax={max}
-          aria-valuenow={value}
-          role="spinbutton"
-          className="flex-1 text-center font-display text-2xl text-ink-950"
-        >
-          {value}
-        </span>
+        <input
+          id={id}
+          type="number"
+          inputMode="numeric"
+          min={min}
+          max={max}
+          step={1}
+          value={draft}
+          required
+          onBlur={() => {
+            const n = draft.trim() ? Number(draft) : value;
+            const next = Number.isFinite(n) ? clamp(n) : value;
+            setDraft(String(next));
+            onChange(next);
+          }}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            const n = e.target.valueAsNumber;
+            if (Number.isInteger(n) && n >= min && n <= max) onChange(n);
+          }}
+          aria-describedby={hint ? `${id}-hint` : undefined}
+          className="w-full min-w-0 bg-transparent text-center text-xl font-semibold"
+        />
         <button
-          id={incId}
           type="button"
           aria-label={`увеличить ${label}`}
-          onClick={inc}
+          onClick={() => onChange(clamp(value + step))}
           disabled={value >= max}
-          className="font-display text-2xl leading-none text-ink-950 transition hover:text-ember-600 disabled:cursor-not-allowed disabled:opacity-30"
+          className="w-12 shrink-0 rounded-inset text-2xl hover:bg-parchment-200"
         >
           +
         </button>
       </div>
-      {hint !== undefined && (
-        <span className="font-body text-xs italic text-ink-900/60">{hint}</span>
+      {hint && (
+        <p id={`${id}-hint`} className="text-sm text-ink-900/70">
+          {hint}
+        </p>
       )}
     </div>
   );

@@ -1,112 +1,95 @@
-import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { useRef, useState, type FormEvent } from 'react';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router';
 import { Parchment } from '../components/Parchment';
-import { WaxSeal } from '../components/WaxSeal';
 import { InkField } from '../components/InkField';
 import { RoleChoice } from '../components/RoleChoice';
 import { useQuickRegister } from '../api/auth-queries';
+import { useAccessToken } from '../api/auth-storage';
 import { ApiError } from '../api/client';
 import type { AssignableRole } from '../api/types';
 
-const NICKNAME_MIN = 3;
-const NICKNAME_MAX = 42;
-
-function validateNickname(nick: string): string | null {
-  const trimmed = nick.trim();
-  if (trimmed.length < NICKNAME_MIN) return `Имя короче ${NICKNAME_MIN} букв — вписать полнее`;
-  if (trimmed.length > NICKNAME_MAX) return `Имя длиннее ${NICKNAME_MAX} букв — сократить`;
-  return null;
-}
-
 export function Register() {
+  const [search] = useSearchParams();
+  const requestedNext = search.get('next');
+  const next = requestedNext?.match(/^\/session\/[a-zA-Z0-9-]+$/) ? requestedNext : null;
   const [nickname, setNickname] = useState('');
-  const [role, setRole] = useState<AssignableRole>('PLAYER');
+  const [role, setRole] = useState<AssignableRole>(
+    search.get('intent') === 'host' ? 'ADMIN' : 'PLAYER',
+  );
   const [localError, setLocalError] = useState<string | null>(null);
-
+  const field = useRef<HTMLInputElement>(null);
   const register = useQuickRegister();
+  const token = useAccessToken();
   const navigate = useNavigate();
+  const destination = next ?? (role === 'ADMIN' ? '/lobby/new' : '/lobby');
 
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    const err = validateNickname(nickname);
-    if (err !== null) {
-      setLocalError(err);
+  if (token !== null && !register.isPending) return <Navigate to={destination} replace />;
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    if (nickname.trim().length < 3 || nickname.trim().length > 42) {
+      setLocalError('Введите имя от 3 до 42 символов.');
+      field.current?.focus();
       return;
     }
     setLocalError(null);
     register.mutate(
       { nickname: nickname.trim(), role },
-      { onSuccess: () => navigate('/') },
+      { onSuccess: () => navigate(destination, { replace: true }) },
     );
   };
-
   const serverError =
-    register.error instanceof ApiError
-      ? register.error.body?.message ?? register.error.message
-      : register.error !== null && register.error !== undefined
-        ? 'Стол не отвечает — попробуй ещё раз'
+    register.error instanceof ApiError && register.error.status < 500
+      ? (register.error.body?.message ?? 'Не удалось войти. Попробуйте другое имя.')
+      : register.error
+        ? 'Не удалось связаться с сервером. Проверьте интернет и попробуйте ещё раз.'
         : null;
 
-  const displayedError = localError ?? serverError;
-
   return (
-    <main className="grid min-h-screen place-items-center px-4 py-10 sm:px-6 sm:py-16">
-      <Parchment className="w-full max-w-lg">
-        <form onSubmit={submit} className="flex flex-col gap-8 text-center">
-          <div className="flex flex-col items-center gap-2">
-            <WaxSeal size={72} monogram="§" />
-            <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600 sm:tracking-[0.4em]">
-              Запись в книгу играющих
+    <main className="page-container max-w-xl py-10">
+      <Parchment>
+        <form onSubmit={submit} noValidate className="flex flex-col gap-6">
+          <div>
+            <span className="eyebrow">{next ? 'Приглашение в игру' : 'Без пароля и почты'}</span>
+            <h1 className="mt-2 text-3xl font-semibold">Как вас зовут?</h1>
+            <p className="mt-3 text-ink-900/70">
+              Другие игроки увидят это имя.{' '}
+              {next ? 'После входа вы вернётесь к приглашению.' : 'Выберите, что хотите сделать.'}
             </p>
-            <h1 className="font-display text-2xl uppercase tracking-[0.16em] text-ink-950 sm:text-3xl">
-              Присесть за стол
-            </h1>
-            <span className="h-px w-24 bg-brass-500/60" />
           </div>
-
-          <p className="font-body text-base italic leading-relaxed text-ink-900/80">
-            Как желаешь быть известен среди играющих? И под каким уставом
-            намерен подойти к столу — как играющий или как ведущий?
-          </p>
-
-          <div className="flex flex-col gap-6 text-left">
-            <InkField
-              label="Имя"
-              placeholder="Например, Alice the Fair"
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-              maxLength={NICKNAME_MAX + 8}
-              autoFocus
-              autoComplete="nickname"
-              hint={`От ${NICKNAME_MIN} до ${NICKNAME_MAX} букв`}
-            />
-            <RoleChoice value={role} onChange={setRole} />
-          </div>
-
-          {displayedError !== null && (
-            <div
-              role="alert"
-              className="rounded-inset border border-blood-500/40 bg-blood-500/10 px-4 py-3 font-body text-sm italic text-blood-600"
-            >
-              {displayedError}
-            </div>
+          <InkField
+            ref={field}
+            label="Имя"
+            placeholder="Например, Алекс"
+            value={nickname}
+            onChange={(e) => {
+              setNickname(e.target.value);
+              setLocalError(null);
+            }}
+            maxLength={42}
+            autoComplete="nickname"
+            hint="От 3 до 42 символов"
+            error={localError ?? undefined}
+          />
+          {!next && <RoleChoice value={role} onChange={setRole} />}
+          {(localError ?? serverError) && (
+            <p role="alert" className="error-message">
+              {localError ?? serverError}
+            </p>
           )}
-
-          <div className="flex flex-col items-center gap-3">
-            <button
-              type="submit"
-              disabled={register.isPending}
-              className="w-full rounded-panel border border-ember-600/40 bg-ember-500 press-tactile min-h-11 px-6 py-3 font-display text-sm uppercase tracking-[0.2em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] hover:shadow-[0_5px_0_var(--color-ember-700)] active:translate-y-[1px] active:shadow-[0_2px_0_var(--color-ember-700)] disabled:cursor-wait disabled:opacity-60 sm:w-auto sm:px-8 sm:tracking-[0.24em]"
-            >
-              {register.isPending ? 'занимаете место…' : 'Присесть за стол'}
-            </button>
-            <Link
-              to="/"
-              className="font-mono text-[10px] uppercase tracking-[0.3em] text-ink-900/50 hover:text-ember-700"
-            >
-              ← вернуться ко входу
-            </Link>
-          </div>
+          <button type="submit" disabled={register.isPending} className="button">
+            {register.isPending ? 'Входим…' : 'Продолжить'}
+          </button>
+          <p className="text-sm text-ink-900/65">
+            Это временный профиль в этом браузере. После выхода вернуться под тем же именем не
+            получится.
+          </p>
+          <Link
+            className="text-link text-center"
+            to={next ? `/practice?next=${encodeURIComponent(next)}` : '/practice'}
+          >
+            Сначала попробовать без регистрации
+          </Link>
         </form>
       </Parchment>
     </main>

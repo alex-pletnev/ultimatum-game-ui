@@ -137,3 +137,18 @@ describe('useTopicSubscription', () => {
     expect(unsubscribeSpy).toHaveBeenCalled();
   });
 });
+
+it('restores exactly one subscription when the transport reconnects', () => {
+  const { client, unsubscribeSpy } = makeMockClient(true);
+  const callback = vi.fn();
+  const view = (connected: boolean) => (
+    <StompContext.Provider value={{ client, connected }}>
+      <Harness destination="/topic/x" onMessage={callback} />
+    </StompContext.Provider>
+  );
+  const { rerender } = render(view(true));
+  rerender(view(false));
+  expect(unsubscribeSpy).toHaveBeenCalledTimes(1);
+  rerender(view(true));
+  expect(client.subscribe).toHaveBeenCalledTimes(2);
+});

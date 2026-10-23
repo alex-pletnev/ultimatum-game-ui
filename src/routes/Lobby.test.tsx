@@ -55,7 +55,7 @@ function renderLobby() {
     <QueryClientProvider client={qc}>
       <MemoryRouter initialEntries={['/lobby']}>
         <Routes>
-          <Route path="/" element={<div>home</div>} />
+          <Route path="/register" element={<div>home</div>} />
           <Route path="/lobby" element={<Lobby />} />
         </Routes>
       </MemoryRouter>
@@ -68,7 +68,12 @@ const sampleSession = (overrides?: Partial<SessionResponse>): SessionResponse =>
   displayName: 'Круг наивных',
   state: 'CREATED',
   createdAt: '2026-07-15T09:00:00.000+00:00',
-  admin: { id: 'u-1', nickname: 'Merlin', role: 'ADMIN', createdAt: '2026-07-15T08:00:00.000+00:00' },
+  admin: {
+    id: 'u-1',
+    nickname: 'Merlin',
+    role: 'ADMIN',
+    createdAt: '2026-07-15T08:00:00.000+00:00',
+  },
   openToConnect: true,
   rounds: [],
   config: {
@@ -106,7 +111,7 @@ describe('Lobby', () => {
     );
     renderLobby();
     await waitFor(() =>
-      expect(screen.getByRole('heading', { name: /Стол пуст/i })).toBeInTheDocument(),
+      expect(screen.getByRole('heading', { name: /Пока нет открытых игр/i })).toBeInTheDocument(),
     );
   });
 
@@ -122,9 +127,7 @@ describe('Lobby', () => {
     );
     renderLobby();
 
-    await waitFor(() =>
-      expect(screen.getByText('Круг наивных')).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText('Круг наивных')).toBeInTheDocument());
     expect(screen.getByText('Совет старейшин')).toBeInTheDocument();
     expect(screen.getAllByText(/ведущий · Merlin/i)).toHaveLength(2);
     // taken/total появляется после отдельного `/with-teams-and-members` per-card
@@ -144,9 +147,11 @@ describe('Lobby', () => {
     );
     renderLobby();
     await waitFor(() =>
-      expect(screen.getByRole('heading', { name: /Стол не отвечает/i })).toBeInTheDocument(),
+      expect(
+        screen.getByRole('heading', { name: /Не удалось загрузить игры/i }),
+      ).toBeInTheDocument(),
     );
-    expect(screen.getByRole('button', { name: /Постучать снова/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Повторить/i })).toBeInTheDocument();
   });
 
   it('shows "Учредить партию" CTA for ADMIN', async () => {
@@ -160,7 +165,7 @@ describe('Lobby', () => {
     });
     renderLobby();
     await waitFor(() =>
-      expect(screen.getByRole('link', { name: /Учредить партию/i })).toBeInTheDocument(),
+      expect(screen.getAllByRole('link', { name: /Создать игру/i })[0]).toBeInTheDocument(),
     );
   });
 
@@ -170,8 +175,8 @@ describe('Lobby', () => {
     );
     renderLobby();
     await waitFor(() =>
-      expect(screen.getByRole('heading', { name: /Стол пуст/i })).toBeInTheDocument(),
+      expect(screen.getByRole('heading', { name: /Пока нет открытых игр/i })).toBeInTheDocument(),
     );
-    expect(screen.queryByRole('link', { name: /Учредить партию/i })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Создать игру/i })).toBeNull();
   });
 });

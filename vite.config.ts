@@ -6,8 +6,8 @@ import path from 'node:path';
 
 // В prod build уезжаем под project-page GH Pages — `/ultimatum-game-ui/`.
 // В dev-сервер и Playwright ходят по `/`, иначе e2e ляжет.
-export default defineConfig(({ command }) => ({
-  base: command === 'build' ? '/ultimatum-game-ui/' : '/',
+export default defineConfig(({ command, isPreview }) => ({
+  base: command === 'build' || isPreview ? '/ultimatum-game-ui/' : '/',
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {

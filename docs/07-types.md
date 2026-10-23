@@ -74,7 +74,7 @@ type PendingActionType = 'SEND_OFFER' | 'MAKE_DECISION';
 | `TeamPrewResponse` | `id: UUID`, `name: string`, `size: number` | Вложен в `SessionResponse.teams` (без раскрытия members) |
 | `TeamResponse` | `id: UUID`, `name: string`, `members: UserResponse[]` | Вложен в `SessionWithTeamsAndMembersResponse.teams` |
 | `SessionResponse` | `id: UUID`, `displayName: string`, `state: SessionState`, `createdAt: string`, `admin: UserResponse`, `openToConnect: boolean`, `rounds: RoundPrewResponse[]`, `config: SessionConfigResponse`, `teams: TeamPrewResponse[]`, `currentRound: RoundPrewResponse \| null` | `GET /session/{id}` |
-| `SessionWithTeamsAndMembersResponse` | Всё из `SessionResponse` +<br>`teams: TeamResponse[]` (раскрыты members),<br>`members: UserResponse[]` (плоский список),<br>`observers: UserResponse[]` | `POST /session`, `POST /session/{id}/join*`, `GET .../with-teams-and-members`, WS `/topic/.../sessionStatus` |
+| `SessionWithTeamsAndMembersResponse` | Поля `SessionResponse` кроме `teams` и `rounds` +<br>`teams: TeamResponse[]` (раскрыты members),<br>`members: UserResponse[]` (плоский список),<br>`observers: UserResponse[]` | `POST /session`, `POST /session/{id}/join*`, `GET .../with-teams-and-members`, WS `/topic/.../sessionStatus` |
 | `Page<T>` | Spring Page: `content: T[]`, `totalElements`, `totalPages`, `number`, `size`, ... | `GET /session` (list) |
 
 ### 4.4 Round + offers + decisions
@@ -127,3 +127,7 @@ type PendingActionType = 'SEND_OFFER' | 'MAKE_DECISION';
 ## 6. Runtime-валидация (опция)
 
 Backend меняется. Чтобы уронить фронт **предсказуемо** при рассинхронизации схем — обернуть каждый REST-ответ и WS-payload в `zod`-схему. Решить в T-002/T-001-follow-up: если контракт стабилен и часто регенерится из OpenAPI → не надо; если ожидается drift → надо.
+
+### Уточнение SessionWithTeamsAndMembersResponse (T-025)
+
+Этот DTO равен `Omit<SessionResponse, 'teams' | 'rounds'>` плюс `teams: TeamResponse[]`, `members: UserResponse[]`, `observers: UserResponse[]`. Поле `rounds` в нём отсутствует — это проверено по Kotlin DTO и реальному HTTP-ответу.

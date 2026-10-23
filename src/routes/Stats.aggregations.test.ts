@@ -59,8 +59,8 @@ describe('computeLeaderboard', () => {
     const b = board.find((p) => p.userId === 'B');
     expect(a?.totalScore).toBe(70);
     expect(b?.totalScore).toBe(30);
-    expect(a?.acceptRateAsResponder).toBe(0);   // A ответил на 1 offer'e (от B), отверг
-    expect(b?.acceptRateAsResponder).toBe(1);   // B ответил на 1 (от A), принял
+    expect(a?.acceptRateAsResponder).toBe(0); // A ответил на 1 offer'e (от B), отверг
+    expect(b?.acceptRateAsResponder).toBe(1); // B ответил на 1 (от A), принял
   });
 
   it('сортировка по убыванию totalScore', () => {
@@ -104,4 +104,12 @@ describe('computeTimeline', () => {
       { round: 2, avgOffer: 50, acceptRate: 100 },
     ]);
   });
+});
+
+it('does not invent a nameless player before offers have been assigned', () => {
+  expect(
+    computeLeaderboard([row({ responderId: '', responderNickname: '', accepted: null })], 100).map(
+      (p) => p.userId,
+    ),
+  ).toEqual(['p1']);
 });

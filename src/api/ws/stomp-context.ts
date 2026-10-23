@@ -9,6 +9,7 @@ export type StompContextValue = {
    * его через onConnect/onDisconnect handlers.
    */
   connected: boolean;
+  error?: { message: string; timestamp: number } | null;
 };
 
 export const StompContext = createContext<StompContextValue>({ client: null, connected: false });

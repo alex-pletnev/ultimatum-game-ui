@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { sessionKeys } from '../session-queries';
 import { useTopicSubscription } from './useTopicSubscription';
@@ -23,6 +23,12 @@ import type {
 export function useSessionLiveSync(id: string | undefined): { connected: boolean } {
   const qc = useQueryClient();
   const connected = useStompConnected();
+  useEffect(() => {
+    if (!connected || !id) return;
+    void qc.invalidateQueries({ queryKey: sessionKeys.details(id) });
+    void qc.invalidateQueries({ queryKey: sessionKeys.currentRound(id) });
+    void qc.invalidateQueries({ queryKey: sessionKeys.score(id) });
+  }, [connected, id, qc]);
 
   const onSessionStatus = useCallback(
     (payload: SessionWithTeamsAndMembersResponse) => {
@@ -44,6 +50,7 @@ export function useSessionLiveSync(id: string | undefined): { connected: boolean
     // Плюс — session.state мог поменяться, инвалидируем details тоже.
     void qc.invalidateQueries({ queryKey: sessionKeys.currentRound(id) });
     void qc.invalidateQueries({ queryKey: sessionKeys.details(id) });
+    void qc.invalidateQueries({ queryKey: sessionKeys.score(id) });
   }, [qc, id]);
 
   // Любое per-round событие (offerCreated / decisionMade / offersShuffled) —
@@ -81,8 +88,7 @@ export function useSessionLiveSync(id: string | undefined): { connected: boolean
     invalidateRound,
   );
 
-  // Кумулятивный счёт после закрытия раунда — кладём напрямую в cache;
-  // REST-fallback'а нет, поэтому setQueryData — единственный источник.
+  // Apply live scores immediately; REST restores them after reload or missed events.
   const onScoreUpdated = useCallback(
     (payload: SessionScoreDto) => {
       if (id === undefined) return;

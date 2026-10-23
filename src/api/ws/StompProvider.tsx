@@ -12,19 +12,26 @@ import { authStorage, useAccessToken } from '../auth-storage';
 export function StompProvider({ children }: { children: ReactNode }) {
   const token = useAccessToken();
   const [connected, setConnected] = useState(false);
+  const [error, setError] = useState<{ message: string; timestamp: number } | null>(null);
 
   const client = useMemo(() => {
     if (token === null) return null;
     return createStompClient(token, {
       onError: (err: StompError) => {
-        console.warn('[stomp] error:', err);
+        setError({
+          message: 'Сервер не принял действие. Обновите игру и попробуйте снова.',
+          timestamp: Date.now(),
+        });
         // Backend отклонил CONNECT (обычно expired JWT). Очищаем storage —
         // useMemo пересоздаст client'а как null, reconnect-loop прекратится.
         if (err.status === 401 || err.status === 403) {
           authStorage.clear();
         }
       },
-      onConnect: () => setConnected(true),
+      onConnect: () => {
+        setConnected(true);
+        setError(null);
+      },
       onDisconnect: () => setConnected(false),
     });
   }, [token]);
@@ -42,6 +49,6 @@ export function StompProvider({ children }: { children: ReactNode }) {
   }, [client]);
 
   return (
-    <StompContext.Provider value={{ client, connected }}>{children}</StompContext.Provider>
+    <StompContext.Provider value={{ client, connected, error }}>{children}</StompContext.Provider>
   );
 }

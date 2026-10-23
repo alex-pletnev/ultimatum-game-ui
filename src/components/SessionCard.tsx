@@ -1,168 +1,57 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
 import { Parchment } from './Parchment';
-import { WaxSeal } from './WaxSeal';
-import { useJoinSession, useSessionDetails } from '../api/session-queries';
-import { ApiError } from '../api/client';
+import { SessionJoin } from './SessionJoin';
+import { useSessionDetails } from '../api/session-queries';
 import type { SessionResponse, UserResponse } from '../api/types';
 
-function sessionTypeLabel(type: SessionResponse['config']['sessionType']): string {
-  return type === 'TEAM_BATTLE' ? 'Битва команд' : 'Все против всех';
-}
-
-type CtaState =
-  | { kind: 'own'; href: string }
-  | { kind: 'team-unsupported' }
-  | { kind: 'full' }
-  | { kind: 'join'; onClick: () => void; isPending: boolean; error: string | null };
-
-type Props = {
+export function SessionCard({
+  session,
+  currentUser,
+}: {
   session: SessionResponse;
   currentUser: UserResponse | undefined;
-};
-
-export function SessionCard({ session, currentUser }: Props) {
-  const initial = session.admin.nickname.charAt(0).toUpperCase();
-  const total = session.config.numPlayers;
-  const isTeam = session.config.sessionType === 'TEAM_BATTLE';
-  const isOwn = currentUser !== undefined && session.admin.id === currentUser.id;
-
-  // GET /session (list) не отдаёт membersCount → для FFA `session.teams` пуст и
-  // taken всегда 0. Тянем details по каждой карточке — react-query дедуп'ит запрос
-  // с полностраничной подпиской в Session.tsx. Кроме того, backend не закрывает
-  // openToConnect у полных сессий (BACKEND-FIX-session-list-member-count.md),
-  // поэтому «полная» карточка тут и определяется вручную.
+}) {
   const details = useSessionDetails(session.id);
-  const taken = details.data?.members.length ?? 0;
-  const isFull = details.data !== undefined && taken >= total;
-
-  const join = useJoinSession();
-  const navigate = useNavigate();
-  const [localError, setLocalError] = useState<string | null>(null);
-
-  const cta: CtaState = isOwn
-    ? { kind: 'own', href: `/session/${session.id}` }
-    : isTeam
-      ? { kind: 'team-unsupported' }
-      : isFull
-        ? { kind: 'full' }
-        : {
-            kind: 'join',
-            isPending: join.isPending,
-            error: localError,
-            onClick: () => {
-              setLocalError(null);
-              join.mutate(
-                { sessionId: session.id },
-                {
-                  onSuccess: () => navigate(`/session/${session.id}`),
-                  onError: (e) => {
-                    const msg =
-                      e instanceof ApiError
-                        ? e.body?.message ?? e.message
-                        : 'Стол не отвечает';
-                    setLocalError(msg);
-                  },
-                },
-              );
-            },
-          };
-
-  // Тактильный отклик карточки в лобби: при наведении лёгкий подъём + shadow up.
-  // Idle-wobble сознательно не добавляем — в сетке из 8 карт становится тошнотворно.
   return (
-    <Parchment className="flex flex-col gap-5 transition-transform duration-300 ease-out hover:-translate-y-1 hover:shadow-[0_16px_36px_-14px_rgba(60,20,10,0.7)]">
-      <div className="flex items-start gap-4">
-        <WaxSeal size={56} monogram={initial} />
-        <div className="flex flex-col">
-          <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-brass-600 sm:tracking-[0.35em]">
-            {sessionTypeLabel(session.config.sessionType)}
-          </p>
-          <h3 className="font-display text-xl uppercase tracking-[0.16em] text-ink-950">
-            {session.displayName}
-          </h3>
-          <p className="mt-1 font-body text-sm italic text-ink-900/70">
-            ведущий · {session.admin.nickname}
-          </p>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-3">
-        <span className="h-px flex-1 bg-brass-500/40" />
-        <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-brass-500 sm:tracking-[0.35em]">
-          Устав партии
+    <Parchment className="flex flex-col gap-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="badge">
+          {session.config.sessionType === 'TEAM_BATTLE' ? 'Команды' : 'Каждый за себя'}
         </span>
-        <span className="h-px flex-1 bg-brass-500/40" />
+        {session.admin.id === currentUser?.id && <span className="badge">Ваша игра</span>}
       </div>
-
-      <dl className="grid grid-cols-3 gap-3 text-center font-body text-ink-900">
+      <div>
+        <h2 className="text-2xl font-semibold">{session.displayName}</h2>
+        <p className="mt-2 text-sm text-ink-900/70">ведущий · {session.admin.nickname}</p>
+      </div>
+      <dl className="grid grid-cols-3 gap-3">
         <div>
-          <dt className="font-mono text-[10px] uppercase tracking-widest text-brass-600">Мест</dt>
-          <dd className="mt-1 font-display text-lg">
-            {taken}/{total}
+          <dt className="text-sm text-ink-900/65">Игроки</dt>
+          <dd className="font-semibold">
+            {details.data ? `${details.data.members.length}/${session.config.numPlayers}` : '…'}
           </dd>
         </div>
         <div>
-          <dt className="font-mono text-[10px] uppercase tracking-widest text-brass-600">Раундов</dt>
-          <dd className="mt-1 font-display text-lg">{session.config.numRounds}</dd>
+          <dt className="text-sm text-ink-900/65">Раунды</dt>
+          <dd className="font-semibold">{session.config.numRounds}</dd>
         </div>
         <div>
-          <dt className="font-mono text-[10px] uppercase tracking-widest text-brass-600">Ставка</dt>
-          <dd className="mt-1 font-display text-lg">{session.config.roundSum}</dd>
+          <dt className="text-sm text-ink-900/65">Монеты</dt>
+          <dd className="font-semibold">{session.config.roundSum}</dd>
         </div>
       </dl>
-
-      {cta.kind === 'own' && (
-        <Link
-          to={cta.href}
-          className="inline-flex min-h-11 items-center justify-center rounded-panel border border-ember-600/40 bg-ember-500 press-tactile px-6 py-2 text-center font-display text-xs uppercase tracking-[0.2em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] sm:tracking-[0.24em]"
-        >
-          Перейти к столу
-        </Link>
-      )}
-
-      {cta.kind === 'team-unsupported' && (
-        <button
-          type="button"
-          disabled
-          title="Битвы команд — скоро (T-010+)"
-          className="cursor-not-allowed min-h-11 rounded-panel border border-ember-600/30 bg-ember-500/60 px-6 py-2 font-display text-xs uppercase tracking-[0.2em] text-night-950/60 sm:tracking-[0.24em]"
-        >
-          Битвы команд — скоро
-        </button>
-      )}
-
-      {cta.kind === 'full' && (
-        <button
-          type="button"
-          disabled
-          title="Все места заняты"
-          className="cursor-not-allowed min-h-11 rounded-panel border border-brass-500/40 bg-transparent px-6 py-2 font-mono text-[10px] uppercase tracking-[0.3em] text-ink-900/50"
-        >
-          Мест больше нет
-        </button>
-      )}
-
-      {cta.kind === 'join' && (
-        <div className="flex flex-col gap-2">
-          <button
-            type="button"
-            onClick={cta.onClick}
-            disabled={cta.isPending}
-            className="min-h-11 rounded-panel border border-ember-600/40 bg-ember-500 press-tactile px-6 py-2 font-display text-xs uppercase tracking-[0.2em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-wait disabled:opacity-60 sm:tracking-[0.24em]"
-          >
-            {cta.isPending ? 'занимаем место…' : 'Заявиться в партию'}
+      <div className="mt-auto">
+        {details.data && currentUser ? (
+          <SessionJoin session={details.data} user={currentUser} />
+        ) : details.isError ? (
+          <button className="text-link" onClick={() => void details.refetch()}>
+            Не удалось загрузить места. Повторить
           </button>
-          {cta.error !== null && (
-            <p
-              role="alert"
-              className="font-body text-xs italic text-blood-600"
-            >
-              {cta.error}
-            </p>
-          )}
-        </div>
-      )}
+        ) : (
+          <p role="status" className="text-sm">
+            Проверяем свободные места…
+          </p>
+        )}
+      </div>
     </Parchment>
   );
 }

@@ -1,382 +1,179 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, Navigate, useNavigate, useParams } from 'react-router';
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { useEffect, useState } from 'react';
+import { Link, Navigate, useHref, useParams } from 'react-router';
 import { AddNpcPanel } from '../components/AddNpcPanel';
 import { Parchment } from '../components/Parchment';
-import { WaxSeal } from '../components/WaxSeal';
-import {
-  easeSolemn,
-  offerCardDrop,
-  scoreListStagger,
-  scoreRowEnter,
-  stampSettle,
-  tearLeft,
-  tearRight,
-} from '../lib/motion';
+import { SessionJoin } from '../components/SessionJoin';
+import { rememberGame } from '../api/recent-game';
 import { useAccessToken } from '../api/auth-storage';
 import { useCurrentUser } from '../api/auth-queries';
 import { useCurrentRound, useSessionDetails, useSessionScore } from '../api/session-queries';
 import { useSessionLiveSync } from '../api/ws/useSessionLiveSync';
-import { useStompSend } from '../api/ws/useStompSend';
+import { useGameCommand } from '../api/ws/useGameCommand';
 import type {
-  CreateOfferCmd,
-  MakeDecisionCmd,
-  RoundPhase,
   RoundResponse,
   SessionScoreDto,
-  SessionState,
   SessionWithTeamsAndMembersResponse,
-  UserResponse,
 } from '../api/types';
 
-const sessionStateLabel: Record<SessionState, string> = {
-  CREATED: 'Ждём начала',
-  RUNNING: 'Партия идёт',
-  FINISHED: 'Партия окончена',
-  ABORTED: 'Партия прервана',
-};
-
-const roundPhaseLabel: Record<RoundPhase, string> = {
-  CREATED: 'Раунд подготовлен',
-  WAIT_OFFERS: 'Ждём предложений',
-  ALL_OFFERS_RECEIVED: 'Тасуем колоду',
-  OFFERS_SENT: 'Ждём решений',
-  ALL_DECISIONS_RECEIVED: 'Подсчёт очков',
-  FINISHED: 'Раунд окончен',
-  ABORTED: 'Раунд прерван',
-};
-
-function myRoleAtTable(
-  session: SessionWithTeamsAndMembersResponse,
-  user: UserResponse,
-): 'ведущий' | 'играющий' | 'наблюдатель' | 'зашедший' {
-  if (session.admin.id === user.id) return 'ведущий';
-  if (session.members.some((m) => m.id === user.id)) return 'играющий';
-  if (session.observers.some((o) => o.id === user.id)) return 'наблюдатель';
-  return 'зашедший';
+function CommandFeedback({ error }: { error: string | null }) {
+  return error ? (
+    <div role="alert" className="error-message">
+      <p>{error}</p>
+      <button className="text-link mt-2" onClick={() => window.location.reload()}>
+        Обновить игру
+      </button>
+    </div>
+  ) : null;
 }
 
-/**
- * Панель WAIT_OFFERS: если player ещё не сделал оффер — слайдер + submit;
- * если сделал — waiting-текст с progress по остальным.
- * Показывается только когда myRole !== NONE (admin-observer не участвует).
- */
+type PhaseProps = {
+  sessionId: string;
+  round: RoundResponse;
+  roundSum: number;
+  playersCount: number;
+  liveConnected: boolean;
+};
+
 export function OfferPhasePanel({
   sessionId,
   round,
   roundSum,
   playersCount,
   liveConnected,
-}: {
-  sessionId: string;
-  round: RoundResponse;
-  roundSum: number;
-  playersCount: number;
-  liveConnected: boolean;
-}) {
-  const stompSend = useStompSend();
-  const [amount, setAmount] = useState<number>(Math.floor(roundSum / 2));
-  const [sending, setSending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const needsToSendOffer = round.myPendingActions.some((a) => a.type === 'SEND_OFFER');
-
-  if (!needsToSendOffer) {
+}: PhaseProps) {
+  const command = useGameCommand(`${round.id}:offer`);
+  const [amount, setAmount] = useState(Math.floor(roundSum / 2));
+  if (!round.myPendingActions.some((a) => a.type === 'SEND_OFFER'))
     return (
-      <>
-        <p className="font-body italic text-ink-900/80">
-          Твоё предложение занесено в книгу.
+      <div role="status">
+        <h3 className="text-xl font-semibold">Предложение отправлено</h3>
+        <p className="mt-2">
+          Ждём остальных. Собрано {round.offers.length} / {playersCount}
         </p>
-        <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600">
-          Собрано {round.offers.length} / {playersCount}
-        </p>
-      </>
-    );
-  }
-
-  const submit = () => {
-    setError(null);
-    setSending(true);
-    try {
-      const body: CreateOfferCmd = { amount };
-      stompSend(`/app/session/${sessionId}/offer.create`, body);
-      // Ставим оптимистический lock до invalidate'а; успешный broadcast снимет
-      // SEND_OFFER из myPendingActions и переключит панель на waiting-режим.
-    } catch (e) {
-      setSending(false);
-      setError(e instanceof Error ? e.message : 'Не удалось отправить предложение');
-    }
-  };
-
-  const disabled = !liveConnected || sending;
-
-  return (
-    <div className="flex w-full max-w-md flex-col gap-4">
-      <p className="font-body text-base italic text-ink-900/80">
-        Раздели ставку {roundSum}: сколько монет предложить второй стороне?
-      </p>
-      <div className="flex flex-col items-center gap-2">
-        <span className="font-display text-3xl text-ink-950">{amount}</span>
-        <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600">
-          из {roundSum} · тебе останется {roundSum - amount}
-        </span>
       </div>
-      <input
-        type="range"
-        min={0}
-        max={roundSum}
-        step={1}
-        value={amount}
-        onChange={(e) => setAmount(Number(e.target.value))}
-        disabled={disabled}
-        aria-label="Сумма предложения"
-        className="w-full accent-ember-500 disabled:opacity-50"
-      />
-      <button
-        type="button"
-        onClick={submit}
-        disabled={disabled}
-        className="w-full rounded-panel border border-ember-600/40 bg-ember-500 press-tactile min-h-11 px-6 py-2 font-display text-sm uppercase tracking-[0.2em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:tracking-[0.24em]"
-        title={liveConnected ? '' : 'ждём подключение к живой ленте'}
-      >
-        {sending ? 'Отправляем…' : 'Огласить сделку'}
-      </button>
-      {error !== null && (
-        <p role="alert" className="font-body text-sm italic text-blood-600">
-          {error}
+    );
+  const disabled = !liveConnected || command.pending;
+  return (
+    <div className="flex w-full flex-col gap-5">
+      <div>
+        <h3 className="text-2xl font-semibold">Сколько предложите другому игроку?</h3>
+        <p className="mt-2 text-ink-900/70">
+          Разделите {roundSum} монет. Если предложение отклонят, оба получите 0 за эту сделку.
         </p>
-      )}
+      </div>
+      <div className="split-preview">
+        <div>
+          Вам остаётся<strong>{roundSum - amount}</strong>
+        </div>
+        <div>
+          Другому игроку<strong>{amount}</strong>
+        </div>
+      </div>
+      <label className="flex flex-col gap-2">
+        Сумма предложения
+        <input
+          type="range"
+          min={0}
+          max={roundSum}
+          step={1}
+          value={amount}
+          disabled={disabled}
+          onChange={(e) => setAmount(Number(e.target.value))}
+        />
+      </label>
+      <div className="flex flex-wrap gap-2">
+        {[0.25, 0.5, 0.75].map((share) => (
+          <button
+            key={share}
+            className="button button-secondary flex-1"
+            disabled={disabled}
+            onClick={() => setAmount(Math.floor(roundSum * share))}
+          >
+            {Math.floor(roundSum * share)} монет
+          </button>
+        ))}
+      </div>
+      <button
+        className="button"
+        disabled={disabled}
+        onClick={() => command.send(`/app/session/${sessionId}/offer.create`, { amount })}
+      >
+        {command.pending ? 'Отправляем…' : `Предложить ${amount} монет`}
+      </button>
+      <p className="text-sm text-ink-900/65">После отправки предложение нельзя изменить.</p>
+      <CommandFeedback error={command.error} />
     </div>
   );
 }
 
-/**
- * Панель OFFERS_SENT: если есть pending MAKE_DECISION — карточка оффера
- * (сумма + имя proposer'а) + кнопки accept/reject. Если решение уже принято —
- * waiting-текст с progress по остальным.
- * Показывается только когда myRole !== NONE.
- */
 export function DecisionPhasePanel({
   sessionId,
   round,
   roundSum,
   playersCount,
   liveConnected,
-}: {
-  sessionId: string;
-  round: RoundResponse;
-  roundSum: number;
-  playersCount: number;
-  liveConnected: boolean;
-}) {
-  const stompSend = useStompSend();
-  const [sending, setSending] = useState<'accept' | 'reject' | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const decisionAction = round.myPendingActions.find((a) => a.type === 'MAKE_DECISION');
-
-  if (decisionAction === undefined || decisionAction.offerId === undefined) {
+}: PhaseProps) {
+  const command = useGameCommand(`${round.id}:decision`);
+  const action = round.myPendingActions.find((a) => a.type === 'MAKE_DECISION');
+  if (!action?.offerId)
     return (
-      <>
-        <p className="font-body italic text-ink-900/80">Твой ответ занесён.</p>
-        <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600">
-          Решено {round.decisions.length} / {playersCount}
+      <div role="status">
+        <h3 className="text-xl font-semibold">Ответ отправлен</h3>
+        <p className="mt-2">
+          Ждём остальных. Решено {round.decisions.length} / {playersCount}
         </p>
-      </>
-    );
-  }
-
-  const offer = round.offers.find((o) => o.id === decisionAction.offerId);
-  if (offer === undefined) {
-    return (
-      <p className="font-body text-sm italic text-blood-600">
-        Оффер {decisionAction.offerId} не найден в раунде.
-      </p>
-    );
-  }
-
-  const submit = (decision: boolean) => {
-    setError(null);
-    setSending(decision ? 'accept' : 'reject');
-    try {
-      const body: MakeDecisionCmd = { offerId: offer.id, decision };
-      stompSend(`/app/session/${sessionId}/make.decision`, body);
-    } catch (e) {
-      setSending(null);
-      setError(e instanceof Error ? e.message : 'Не удалось отправить решение');
-    }
-  };
-
-  const disabled = !liveConnected || sending !== null;
-  const reveal = sending; // Финальная фаза сцены — используем sending как триггер визуала.
-
-  return (
-    <div className="flex w-full max-w-md flex-col gap-4">
-      <p className="font-body italic text-ink-900/80">
-        {offer.proposer.nickname} предлагает разделить ставку:
-      </p>
-
-      {/* Сцена A: карточка оффера опускается сверху, сумма садится штампом.
-          Сцена B (reject): карточка «рвётся» пополам через две clip-path половины. */}
-      <div className="relative flex flex-col items-center gap-1 py-2">
-        {reveal === 'reject' ? (
-          <RejectTearOverlay
-            amount={offer.offerValue}
-            remaining={roundSum - offer.offerValue}
-          />
-        ) : (
-          <OfferCardVisual
-            amount={offer.offerValue}
-            remaining={roundSum - offer.offerValue}
-            dimmed={reveal === 'accept'}
-          />
-        )}
-
-        {/* Сцена B (accept): восковая печать накрывает карту. */}
-        <AnimatePresence>
-          {reveal === 'accept' && (
-            <motion.div
-              key="accept-stamp"
-              initial={{ opacity: 0, scale: 0.4, rotate: -18 }}
-              animate={{
-                opacity: [0, 1, 1],
-                scale: [0.4, 1.15, 1],
-                rotate: [-18, -4, 0],
-                transition: { duration: 0.42, ease: easeSolemn, times: [0, 0.55, 1] },
-              }}
-              className="pointer-events-none absolute inset-0 flex items-center justify-center"
-            >
-              <WaxSeal size={110} monogram="✓" />
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
-
-      <div className="grid grid-cols-2 gap-3">
+    );
+  const offer = round.offers.find((o) => o.id === action.offerId);
+  if (!offer) return <p role="status">Загружаем предложение…</p>;
+  const disabled = !liveConnected || command.pending;
+  return (
+    <div className="flex w-full flex-col gap-5">
+      <h3 className="text-2xl font-semibold">{offer.proposer.nickname} предлагает раздел</h3>
+      <div className="split-preview">
+        <div>
+          Вы получите<strong data-testid="assigned-offer-amount">{offer.offerValue}</strong>
+        </div>
+        <div>
+          Другой игрок получит<strong>{roundSum - offer.offerValue}</strong>
+        </div>
+      </div>
+      <p>
+        Примете — каждый получит свою долю. Откажетесь — оба получите 0 за эту сделку. Решение
+        нельзя отменить.
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2">
         <button
-          type="button"
-          onClick={() => submit(true)}
+          className="button"
           disabled={disabled}
-          className="press-tactile min-h-11 rounded-panel border border-verdigris-600/40 bg-verdigris-500/90 px-4 py-2 font-display text-sm uppercase tracking-[0.2em] text-parchment-100 shadow-[0_4px_0_var(--color-verdigris-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50"
+          onClick={() =>
+            command.send(`/app/session/${sessionId}/make.decision`, {
+              offerId: offer.id,
+              decision: true,
+            })
+          }
         >
-          {sending === 'accept' ? 'Скрепляем…' : 'Согласиться'}
+          Принять · получить {offer.offerValue}
         </button>
         <button
-          type="button"
-          onClick={() => submit(false)}
+          className="button button-secondary"
           disabled={disabled}
-          className="press-tactile min-h-11 rounded-panel border border-blood-600/40 bg-blood-500/90 px-4 py-2 font-display text-sm uppercase tracking-[0.2em] text-parchment-100 shadow-[0_4px_0_var(--color-blood-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50"
+          onClick={() =>
+            command.send(`/app/session/${sessionId}/make.decision`, {
+              offerId: offer.id,
+              decision: false,
+            })
+          }
         >
-          {sending === 'reject' ? 'Разбиваем…' : 'Разбить сделку'}
+          Отклонить · обоим 0
         </button>
       </div>
-      {error !== null && (
-        <p role="alert" className="font-body text-sm italic text-blood-600">
-          {error}
-        </p>
-      )}
+      {command.pending && <p role="status">Отправляем решение…</p>}
+      <CommandFeedback error={command.error} />
     </div>
   );
 }
 
-/**
- * Сцена A: карта-оффер опускается сверху (~600ms), сумма садится штампом
- * (задержка 200ms + scale/rotate settle). `dimmed=true` — карта уходит в
- * тень поверх неё будет appear'ена печать accept.
- */
-function OfferCardVisual({
-  amount,
-  remaining,
-  dimmed,
-}: {
-  amount: number;
-  remaining: number;
-  dimmed: boolean;
-}) {
-  return (
-    <motion.div
-      variants={offerCardDrop}
-      initial="hidden"
-      animate={dimmed ? { opacity: 0.35, filter: 'grayscale(0.4)' } : 'visible'}
-      transition={{ duration: 0.4, ease: easeSolemn }}
-      className="flex flex-col items-center gap-1"
-    >
-      <motion.span
-        variants={stampSettle}
-        initial="hidden"
-        animate="visible"
-        data-testid="assigned-offer-amount"
-        className="font-display text-3xl text-ink-950"
-      >
-        {amount}
-      </motion.span>
-      <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600">
-        тебе · ему остаётся {remaining}
-      </span>
-    </motion.div>
-  );
-}
-
-/**
- * Сцена B (reject): визуально «разрываем» карточку.
- * Две clip-path половины уезжают в стороны, между ними красный проблеск.
- */
-function RejectTearOverlay({
-  amount,
-  remaining,
-}: {
-  amount: number;
-  remaining: number;
-}) {
-  const inner = (
-    <div className="flex flex-col items-center gap-1">
-      <span className="font-display text-3xl text-ink-950">{amount}</span>
-      <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600">
-        тебе · ему остаётся {remaining}
-      </span>
-    </div>
-  );
-  return (
-    <div className="relative h-16 w-full">
-      <motion.div
-        aria-hidden
-        initial={{ opacity: 0 }}
-        animate={{
-          opacity: [0, 0.5, 0],
-          transition: { duration: 0.45, ease: easeSolemn },
-        }}
-        className="absolute inset-0 rounded-inset"
-        style={{
-          background:
-            'radial-gradient(ellipse at center, var(--color-blood-500) 0%, transparent 65%)',
-        }}
-      />
-      <motion.div
-        variants={tearLeft}
-        initial="hidden"
-        animate="visible"
-        className="absolute inset-0 flex items-center justify-center"
-        style={{ clipPath: 'polygon(0 0, 52% 0, 48% 100%, 0 100%)' }}
-      >
-        {inner}
-      </motion.div>
-      <motion.div
-        variants={tearRight}
-        initial="hidden"
-        animate="visible"
-        className="absolute inset-0 flex items-center justify-center"
-        style={{ clipPath: 'polygon(52% 0, 100% 0, 100% 100%, 48% 100%)' }}
-      >
-        {inner}
-      </motion.div>
-    </div>
-  );
-}
-
-/**
- * Маленькая кнопка «Прервать раунд» для ADMIN. Показывается в активных
- * фазах, где abort имеет смысл (round перешёл в WAIT_OFFERS и ещё не закрыт).
- */
 export function AbortRoundButton({
   sessionId,
   liveConnected,
@@ -384,175 +181,42 @@ export function AbortRoundButton({
   sessionId: string;
   liveConnected: boolean;
 }) {
-  const stompSend = useStompSend();
-  const [sending, setSending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const submit = () => {
-    setError(null);
-    setSending(true);
-    try {
-      stompSend(`/app/session/${sessionId}/round.abort`);
-    } catch (e) {
-      setSending(false);
-      setError(e instanceof Error ? e.message : 'Не удалось отправить команду');
-    }
-  };
-
+  const [confirm, setConfirm] = useState(false);
+  const command = useGameCommand(`${sessionId}:abort`);
   return (
-    <div className="mt-2 flex flex-col items-center gap-2">
-      <button
-        type="button"
-        onClick={submit}
-        disabled={!liveConnected || sending}
-        className="rounded-panel border border-blood-600/40 bg-transparent px-4 py-1.5 font-mono text-[10px] uppercase tracking-[0.3em] text-blood-500 transition hover:bg-blood-500/10 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {sending ? 'Прерываем…' : 'Прервать раунд'}
-      </button>
-      {error !== null && (
-        <p role="alert" className="font-body text-sm italic text-blood-600">
-          {error}
-        </p>
+    <div className="mt-6 border-t border-brass-500/20 pt-4">
+      {!confirm ? (
+        <button className="text-link text-sm" onClick={() => setConfirm(true)}>
+          Прервать раунд
+        </button>
+      ) : (
+        <div className="flex flex-col gap-3">
+          <p>
+            Прервать текущий раунд? Игроки больше не смогут отправить предложения и ответы в нём.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <button
+              className="button button-secondary"
+              onClick={() => setConfirm(false)}
+              disabled={command.pending}
+            >
+              Продолжить раунд
+            </button>
+            <button
+              className="button"
+              disabled={!liveConnected || command.pending}
+              onClick={() => command.send(`/app/session/${sessionId}/round.abort`)}
+            >
+              Да, прервать
+            </button>
+          </div>
+        </div>
       )}
+      <CommandFeedback error={command.error} />
     </div>
   );
 }
 
-/**
- * Плавно интерполирует число от предыдущего к новому за ~450ms.
- * Пропускает анимацию при первом mount (нет prev) и при reduced-motion.
- */
-function AnimatedNumber({ value, className }: { value: number; className?: string }) {
-  const reduce = useReducedMotion();
-  const [display, setDisplay] = useState(value);
-  const prevRef = useRef(value);
-
-  useEffect(() => {
-    const from = prevRef.current;
-    const to = value;
-    prevRef.current = value;
-    if (reduce || from === to) {
-      setDisplay(to);
-      return;
-    }
-    const start = performance.now();
-    const duration = 450;
-    let raf = 0;
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / duration);
-      // ease-out cubic
-      const eased = 1 - Math.pow(1 - t, 3);
-      setDisplay(Math.round(from + (to - from) * eased));
-      if (t < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [value, reduce]);
-
-  return <span className={className}>{display}</span>;
-}
-
-/**
- * Сцена C: строки табло вкатываются снизу stagger 80ms,
- * числа плавно тикают от прошлого счёта к новому,
- * лидер по дельте получает короткий golden pulse.
- */
-function ScoreBoard({
-  score,
-  currentUserId,
-}: {
-  score: SessionScoreDto;
-  currentUserId: string;
-}) {
-  const prevScoresRef = useRef<Map<string, number>>(new Map());
-
-  // Дельты вычисляем ДО обновления prev, а обновляем в effect ниже — иначе
-  // повторный render на других props перезатрёт первую дельту.
-  const deltas = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const p of score.players) {
-      const prev = prevScoresRef.current.get(p.userId) ?? 0;
-      map.set(p.userId, p.score - prev);
-    }
-    return map;
-  }, [score.players]);
-
-  const winnerId = useMemo(() => {
-    let best = -Infinity;
-    let winner: string | null = null;
-    for (const [id, d] of deltas) {
-      if (d > best) {
-        best = d;
-        winner = id;
-      }
-    }
-    // Пульсируем только если дельта строго > 0 — иначе «победа с нулём» нелепа.
-    return best > 0 ? winner : null;
-  }, [deltas]);
-
-  useEffect(() => {
-    for (const p of score.players) {
-      prevScoresRef.current.set(p.userId, p.score);
-    }
-  }, [score.players]);
-
-  const sorted = useMemo(
-    () => [...score.players].sort((a, b) => b.score - a.score),
-    [score.players],
-  );
-
-  return (
-    <>
-      <p className="text-center font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600">
-        Сыграно раундов: {score.roundsCompleted}
-      </p>
-      <motion.ul
-        variants={scoreListStagger}
-        initial="hidden"
-        animate="visible"
-        className="flex flex-col divide-y divide-brass-500/20"
-      >
-        {sorted.map((p) => {
-          const isMe = p.userId === currentUserId;
-          const isWinner = p.userId === winnerId;
-          return (
-            <motion.li
-              key={p.userId}
-              variants={scoreRowEnter}
-              {...(isWinner
-                ? {
-                    animate: {
-                      scale: [1, 1.04, 1],
-                      transition: { duration: 0.8, repeat: 1, ease: 'easeInOut' as const },
-                    },
-                  }
-                : {})}
-              className={`flex items-center justify-between py-2 font-body ${
-                isMe ? 'text-ember-700' : 'text-ink-900'
-              } ${
-                isWinner
-                  ? 'rounded-inset px-2 bg-[radial-gradient(ellipse_at_center,rgba(168,135,63,0.25),transparent_70%)]'
-                  : ''
-              }`}
-            >
-              <span className="font-display uppercase tracking-[0.14em]">
-                {p.nickname}
-                {isMe && ' · ты'}
-              </span>
-              <AnimatedNumber value={p.score} className="font-display text-xl" />
-            </motion.li>
-          );
-        })}
-      </motion.ul>
-    </>
-  );
-}
-
-/**
- * Панель финала раунда / сессии: таблица счёта + ADMIN-контрол «Следующий раунд»
- * (или «Завершить партию» на последнем). Score приходит только через WS
- * (`scoreUpdated`); mount после раунда без WS-события — покажет placeholder.
- */
 export function RoundResultPanel({
   sessionId,
   score,
@@ -570,398 +234,442 @@ export function RoundResultPanel({
   isLastRound: boolean;
   liveConnected: boolean;
 }) {
-  const stompSend = useStompSend();
-  const [sending, setSending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const submitNext = () => {
-    setError(null);
-    setSending(true);
-    try {
-      stompSend(`/app/session/${sessionId}/round.start`);
-    } catch (e) {
-      setSending(false);
-      setError(e instanceof Error ? e.message : 'Не удалось отправить команду');
-    }
-  };
-
-  const disabled = !liveConnected || sending;
-  const nextLabel = isLastRound ? 'Завершить партию' : 'Следующий раунд';
-
+  const command = useGameCommand(`${sessionId}:${score?.roundsCompleted}:next`);
   return (
-    <div className="flex w-full max-w-md flex-col gap-4">
-      <div className="flex items-center gap-3">
-        <span className="h-px flex-1 bg-brass-500/40" />
-        <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-brass-500 sm:tracking-[0.35em]">
-          Табло очков
-        </span>
-        <span className="h-px flex-1 bg-brass-500/40" />
-      </div>
-
-      {score === undefined ? (
-        <p className="font-body italic text-ink-900/60">
-          Считаем очки… (если mount пришёл после раунда, обнови страницу когда
-          пойдёт следующий).
-        </p>
+    <div className="flex w-full flex-col gap-5">
+      <h3 className="text-xl font-semibold">Общий счёт</h3>
+      {!score ? (
+        <p role="status">Считаем очки…</p>
       ) : (
-        <ScoreBoard score={score} currentUserId={currentUserId} />
-      )}
-
-      {isAdmin && isSessionRunning && (
         <>
-          <button
-            type="button"
-            onClick={submitNext}
-            disabled={disabled}
-            className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile min-h-11 px-6 py-2 font-display text-sm uppercase tracking-[0.2em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50 sm:tracking-[0.24em]"
-          >
-            {sending ? 'Идёт закрытие…' : nextLabel}
-          </button>
-          {error !== null && (
-            <p role="alert" className="font-body text-sm italic text-blood-600">
-              {error}
-            </p>
+          <p className="text-sm text-ink-900/70">Сыграно раундов: {score.roundsCompleted}</p>
+          <ol aria-label="Счёт игроков" className="divide-y divide-brass-500/20">
+            {[...score.players]
+              .sort((a, b) => b.score - a.score)
+              .map((p, i) => (
+                <li key={p.userId} className="flex items-center justify-between gap-4 py-3">
+                  <span className="min-w-0 break-words">
+                    {i + 1}. {p.nickname}
+                    {p.userId === currentUserId ? ' · ты' : ''}
+                  </span>
+                  <strong className="shrink-0 text-xl">{p.score}</strong>
+                </li>
+              ))}
+          </ol>
+          {score.teams.length > 0 && (
+            <div className="notice">
+              <h4 className="mb-2 font-semibold">Командный счёт</h4>
+              {score.teams.map((t) => (
+                <p key={t.teamId} className="flex justify-between gap-3">
+                  <span>{t.name}</span>
+                  <strong>{t.score}</strong>
+                </p>
+              ))}
+            </div>
           )}
         </>
+      )}
+      {isAdmin && isSessionRunning && (
+        <button
+          className="button"
+          disabled={!liveConnected || command.pending}
+          onClick={() => command.send(`/app/session/${sessionId}/round.start`)}
+        >
+          {command.pending ? 'Продолжаем…' : isLastRound ? 'Завершить партию' : 'Следующий раунд'}
+        </button>
+      )}
+      {!isAdmin && isSessionRunning && (
+        <p className="text-sm text-ink-900/70">
+          Ведущий начнёт следующий раунд. Можно пока обсудить результаты.
+        </p>
+      )}
+      <CommandFeedback error={command.error} />
+    </div>
+  );
+}
+
+function Invite({ id }: { id: string }) {
+  const href = useHref(`/session/${id}`);
+  const url = new URL(href, window.location.href).href;
+  const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState(false);
+  return (
+    <div className="notice flex flex-col gap-3">
+      <label htmlFor="invitation" className="font-semibold">
+        Пригласите друзей
+      </label>
+      <p className="text-sm">Отправьте ссылку. Друзья введут имя и присоединятся к этой игре.</p>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <input
+          id="invitation"
+          readOnly
+          value={url}
+          onFocus={(e) => e.target.select()}
+          className="min-w-0 flex-1 rounded-inset border border-brass-500/40 bg-white px-3 text-sm"
+        />
+        <button
+          className="button button-secondary"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(url);
+              setCopied(true);
+              setCopyError(false);
+            } catch {
+              setCopyError(true);
+            }
+          }}
+        >
+          {copied ? 'Скопировано' : 'Копировать ссылку'}
+        </button>
+      </div>
+      {copyError && (
+        <p role="status" className="text-sm">
+          Не удалось скопировать автоматически. Выделите ссылку выше и скопируйте её.
+        </p>
       )}
     </div>
   );
 }
 
-function MemberRow({ user, sub }: { user: UserResponse; sub?: string }) {
-  return (
-    <div className="flex items-center gap-3">
-      <WaxSeal size={40} monogram={user.nickname.charAt(0).toUpperCase()} />
-      <div className="flex flex-col">
-        <span className="font-display text-sm uppercase tracking-[0.12em] text-ink-950">
-          {user.nickname}
-        </span>
-        {sub !== undefined && (
-          <span className="font-mono text-[10px] uppercase tracking-widest text-brass-600">
-            {sub}
-          </span>
-        )}
-      </div>
-    </div>
-  );
+function readiness(session: SessionWithTeamsAndMembersResponse): string | null {
+  if (session.members.length < 2)
+    return 'Для начала нужны хотя бы два игрока. Пригласите друзей или добавьте ботов.';
+  if (session.config.sessionType === 'TEAM_BATTLE') {
+    const largest = Math.max(...session.teams.map((t) => t.members.length), 0);
+    if (largest > session.members.length / 2)
+      return 'Распределите игроков по командам поровну, чтобы каждый получил предложение соперника.';
+  }
+  return null;
 }
 
 export function Session() {
   const token = useAccessToken();
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const { data: user } = useCurrentUser();
-  const { data: session, isLoading, isError } = useSessionDetails(id);
-  const { connected: liveConnected } = useSessionLiveSync(id);
-  const stompSend = useStompSend();
-  const [sendError, setSendError] = useState<string | null>(null);
-
-  const isRunning = session?.state === 'RUNNING';
-  const { data: round } = useCurrentRound(id, isRunning);
-  const { data: score } = useSessionScore(id);
-
-  // Автопереход на /stats при переходе в FINISHED. Задержка даёт увидеть
-  // финальный экран с табло, а `redirected` предохраняет от повторного
-  // navigate при возврате пользователя (кнопка «назад») на уже FINISHED-сессию.
-  const redirected = useRef(false);
+  const profile = useCurrentUser();
+  const details = useSessionDetails(id);
+  const session = details.data;
+  const user = profile.data;
+  const { connected } = useSessionLiveSync(token ? id : undefined);
+  const current = useCurrentRound(id, session?.state === 'RUNNING');
+  const round = current.data;
+  const score = useSessionScore(id);
+  const start = useGameCommand(`${id}:${session?.state}`);
   useEffect(() => {
-    if (session?.state !== 'FINISHED' || redirected.current || id === undefined) return;
-    redirected.current = true;
-    const t = setTimeout(() => navigate(`/session/${id}/stats`), 4000);
-    return () => clearTimeout(t);
-  }, [session?.state, id, navigate]);
+    if (
+      session &&
+      user &&
+      (session.admin.id === user.id || session.members.some((m) => m.id === user.id))
+    ) {
+      rememberGame(user.id, {
+        id: session.id,
+        name: session.displayName,
+        finished: session.state === 'FINISHED' || session.state === 'ABORTED',
+      });
+    }
+  }, [session, user]);
 
-  if (token === null) return <Navigate to="/" replace />;
-
-  if (isLoading) {
+  if (!token)
+    return <Navigate to={`/register?next=${encodeURIComponent(`/session/${id ?? ''}`)}`} replace />;
+  if (details.isLoading || profile.isLoading)
     return (
-      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-8 sm:py-16">
-        <div
-          aria-hidden
-          className="h-96 animate-pulse rounded-card bg-parchment-100/40"
-          style={{ boxShadow: 'var(--shadow-parchment)' }}
-        />
-      </div>
+      <p role="status" className="page-container py-12">
+        Загружаем игру…
+      </p>
     );
-  }
-
-  if (isError || session === undefined || user === undefined) {
+  if (!session || !user)
     return (
-      <div className="mx-auto max-w-lg px-4 py-10 sm:px-8 sm:py-16">
-        <Parchment className="text-center">
-          <div className="flex flex-col items-center gap-4">
-            <WaxSeal size={64} monogram="!" />
-            <h1 className="font-display text-xl uppercase tracking-[0.16em] text-blood-500">
-              Стол не найден
-            </h1>
-            <p className="font-body italic text-ink-900/80">
-              Партии с таким знаком нет — либо она уже завершилась.
-            </p>
-            <Link
-              to="/lobby"
-              className="mt-2 font-mono text-[10px] uppercase tracking-[0.3em] text-ink-900/60 hover:text-ember-700"
-            >
-              ← в лобби
-            </Link>
-          </div>
-        </Parchment>
-      </div>
-    );
-  }
-
-  const myRole = myRoleAtTable(session, user);
-  const playerList = session.members;
-  const observerList = session.observers;
-
-  return (
-    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-8 sm:py-16">
-      <header className="mb-8 flex flex-col gap-4 border-b border-brass-500/30 pb-6 sm:mb-10 sm:flex-row sm:items-baseline sm:justify-between">
-        <div>
-          <p className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.3em] text-brass-500 sm:tracking-[0.4em]">
-            У стола · роль {myRole}
-            <span
-              aria-label={liveConnected ? 'подключено к живой ленте' : 'подключение к живой ленте'}
-              title={liveConnected ? 'живая лента активна' : 'ждём подключение'}
-              className={`inline-block h-2 w-2 rounded-token ${
-                liveConnected ? 'bg-verdigris-500' : 'bg-brass-500/40'
-              }`}
-            />
-          </p>
-          <h1 className="mt-2 font-display text-2xl uppercase tracking-[0.16em] text-parchment-100 sm:text-3xl">
-            {session.displayName}
-          </h1>
-        </div>
-        <div className="flex flex-col items-start gap-1 sm:items-end">
-          {session.state !== 'CREATED' && (
-            <Link
-              to={`/session/${session.id}/stats`}
-              className="font-mono text-[10px] uppercase tracking-[0.3em] text-parchment-300/60 hover:text-ember-400"
-            >
-              летопись →
-            </Link>
-          )}
-          <Link
-            to="/lobby"
-            className="font-mono text-[10px] uppercase tracking-[0.3em] text-parchment-300/60 hover:text-ember-400"
+      <main className="page-container max-w-xl py-10">
+        <Parchment>
+          <h1 className="text-2xl font-semibold">Не удалось открыть игру</h1>
+          <p className="my-4">Проверьте ссылку и подключение к интернету.</p>
+          <button
+            className="button"
+            onClick={() => {
+              void details.refetch();
+              void profile.refetch();
+            }}
           >
-            ← в лобби
+            Повторить
+          </button>
+          <Link className="text-link ml-4" to="/lobby">
+            К играм
           </Link>
+        </Parchment>
+      </main>
+    );
+  const isAdmin = session.admin.id === user.id;
+  const isPlayer = session.members.some((p) => p.id === user.id);
+  const isObserver = session.observers.some((p) => p.id === user.id);
+  const hasJoined = isAdmin || isPlayer || isObserver;
+  const readyError = readiness(session);
+  const finishedRound =
+    round && ['FINISHED', 'ALL_DECISIONS_RECEIVED', 'ABORTED'].includes(round.roundPhase);
+  return (
+    <main className="page-container max-w-4xl py-8">
+      <header className="mb-6">
+        <Link className="text-link text-sm" to="/lobby">
+          ← Все игры
+        </Link>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <h1 className="text-3xl font-semibold">{session.displayName}</h1>
+          <span className="badge">
+            {isAdmin ? 'Вы — ведущий' : isPlayer ? 'Вы — игрок' : 'Приглашение'}
+          </span>
         </div>
       </header>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <Parchment className="flex flex-col gap-4">
-          <div className="flex items-center gap-3">
-            <span className="h-px flex-1 bg-brass-500/40" />
-            <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-brass-500 sm:tracking-[0.35em]">
-              За столом
-            </span>
-            <span className="h-px flex-1 bg-brass-500/40" />
-          </div>
-          <MemberRow user={session.admin} sub="ведущий" />
-          {playerList
-            .filter((p) => p.id !== session.admin.id)
-            .map((p) => (
-              <MemberRow key={p.id} user={p} sub="играющий" />
-            ))}
-          {observerList.map((o) => (
-            <MemberRow key={o.id} user={o} sub="наблюдатель" />
-          ))}
-          {playerList.length === 0 && observerList.length === 0 && (
-            <p className="font-body italic text-ink-900/60">
-              Пока только ведущий. Ждём остальных.
+      {!connected && hasJoined && (
+        <p className="notice mb-5" role="status">
+          Восстанавливаем соединение… Действия станут доступны автоматически. Не закрывайте
+          страницу.
+        </p>
+      )}
+      <Parchment className="flex flex-col gap-6">
+        {!hasJoined ? (
+          <>
+            <h2 className="text-2xl font-semibold">Присоединиться к игре</h2>
+            <p>
+              Ведущий: {session.admin.nickname}. Игроков: {session.members.length}/
+              {session.config.numPlayers}. {session.config.numRounds} раунда,{' '}
+              {session.config.roundSum} монет на сделку.
             </p>
-          )}
-        </Parchment>
-
-        <Parchment className="flex flex-col gap-4">
-          <div className="flex items-center gap-3">
-            <span className="h-px flex-1 bg-brass-500/40" />
-            <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-brass-500 sm:tracking-[0.35em]">
-              Устав партии
-            </span>
-            <span className="h-px flex-1 bg-brass-500/40" />
-          </div>
-          <dl className="grid grid-cols-2 gap-4 text-center font-body text-ink-900">
-            <div>
-              <dt className="font-mono text-[10px] uppercase tracking-widest text-brass-600">
-                Мест
-              </dt>
-              <dd className="mt-1 font-display text-lg">
-                {playerList.length}/{session.config.numPlayers}
-              </dd>
-            </div>
-            <div>
-              <dt className="font-mono text-[10px] uppercase tracking-widest text-brass-600">
-                Раундов
-              </dt>
-              <dd className="mt-1 font-display text-lg">{session.config.numRounds}</dd>
-            </div>
-            <div>
-              <dt className="font-mono text-[10px] uppercase tracking-widest text-brass-600">
-                Ставка
-              </dt>
-              <dd className="mt-1 font-display text-lg">{session.config.roundSum}</dd>
-            </div>
-            <div>
-              <dt className="font-mono text-[10px] uppercase tracking-widest text-brass-600">
-                Тип
-              </dt>
-              <dd className="mt-1 font-display text-sm">
-                {session.config.sessionType === 'TEAM_BATTLE' ? 'команды' : 'все×всех'}
-              </dd>
-            </div>
-          </dl>
-        </Parchment>
-      </div>
-
-      <Parchment className="mx-auto mt-10 max-w-2xl">
-        <div className="flex flex-col items-center gap-4 text-center">
-          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600 sm:tracking-[0.4em]">
-            {sessionStateLabel[session.state]}
-          </p>
-
-          {session.state === 'RUNNING' && round !== undefined && (
-            <>
-              <h2 className="font-display text-xl uppercase tracking-[0.16em] text-ink-950 sm:text-2xl">
-                Раунд {round.roundNumber} / {session.config.numRounds}
-              </h2>
-              <span className="h-px w-16 bg-brass-500/60" />
-              <p className="font-body text-lg italic text-ink-900/80">
-                {roundPhaseLabel[round.roundPhase]}
-              </p>
-              {round.myRole !== 'NONE' && (
-                <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-brass-600">
-                  Твоя роль в раунде: {round.myRole === 'BOTH' ? 'proposer + responder' : round.myRole.toLowerCase()}
+            <SessionJoin session={session} user={user} />
+          </>
+        ) : (
+          <>
+            {session.state === 'CREATED' && (
+              <>
+                <h2 className="text-2xl font-semibold">
+                  {isAdmin ? 'Пригласите игроков и начните' : 'Вы в игре. Ждём начала'}
+                </h2>
+                <p>
+                  {session.members.length} из {session.config.numPlayers} мест занято.{' '}
+                  {isAdmin
+                    ? 'Можно начать, когда соберутся хотя бы двое.'
+                    : `Ведущий ${session.admin.nickname} начнёт раунд. Страница обновится автоматически.`}
                 </p>
-              )}
-              {round.roundPhase === 'WAIT_OFFERS' && myRole === 'играющий' && (
+                <Invite id={session.id} />
+                {isAdmin && (
+                  <>
+                    {readyError && <p className="text-sm text-ink-900/70">{readyError}</p>}
+                    <button
+                      className="button"
+                      disabled={!connected || Boolean(readyError) || start.pending}
+                      onClick={() => start.send(`/app/session/${session.id}/start`)}
+                    >
+                      {start.pending ? 'Начинаем…' : 'Начать игру'}
+                    </button>
+                    <CommandFeedback error={start.error} />
+                    <AddNpcPanel session={session} />
+                  </>
+                )}
+              </>
+            )}
+            {session.state === 'RUNNING' && (
+              <>
+                {current.isError ? (
+                  <p role="alert">
+                    Не удалось загрузить раунд.{' '}
+                    <button className="text-link" onClick={() => void current.refetch()}>
+                      Повторить
+                    </button>
+                  </p>
+                ) : !round ? (
+                  <p role="status">Загружаем раунд…</p>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <h2 className="text-xl font-semibold">
+                        Раунд {round.roundNumber} / {session.config.numRounds}
+                      </h2>
+                      <span className="badge">
+                        {finishedRound
+                          ? 'Результаты'
+                          : round.roundPhase === 'OFFERS_SENT'
+                            ? 'Ответы'
+                            : 'Предложения'}
+                      </span>
+                    </div>
+                    <ol className="flex flex-wrap gap-2 text-sm" aria-label="Ход раунда">
+                      <li
+                        className="badge"
+                        aria-current={round.roundPhase === 'WAIT_OFFERS' ? 'step' : undefined}
+                      >
+                        1. Предложения
+                      </li>
+                      <li
+                        className="badge"
+                        aria-current={round.roundPhase === 'OFFERS_SENT' ? 'step' : undefined}
+                      >
+                        2. Ответы
+                      </li>
+                      <li className="badge" aria-current={finishedRound ? 'step' : undefined}>
+                        3. Результаты
+                      </li>
+                    </ol>
+                    {isPlayer && ['CREATED', 'ALL_OFFERS_RECEIVED'].includes(round.roundPhase) && (
+                      <p role="status">
+                        Распределяем предложения. Ваш следующий ход появится автоматически.
+                      </p>
+                    )}
+                    {isPlayer && round.roundPhase === 'WAIT_OFFERS' && (
+                      <OfferPhasePanel
+                        key={`${round.id}:offer`}
+                        sessionId={session.id}
+                        round={round}
+                        roundSum={session.config.roundSum}
+                        playersCount={session.members.length}
+                        liveConnected={connected}
+                      />
+                    )}
+                    {isPlayer && round.roundPhase === 'OFFERS_SENT' && (
+                      <DecisionPhasePanel
+                        key={`${round.id}:decision`}
+                        sessionId={session.id}
+                        round={round}
+                        roundSum={session.config.roundSum}
+                        playersCount={session.members.length}
+                        liveConnected={connected}
+                      />
+                    )}
+                    {!isPlayer && !finishedRound && (
+                      <div role="status" className="notice">
+                        <h3 className="font-semibold">
+                          {round.roundPhase === 'OFFERS_SENT'
+                            ? 'Игроки принимают решения'
+                            : 'Игроки делают предложения'}
+                        </h3>
+                        <p className="mt-2">
+                          Предложений: {round.offers.length}/{session.members.length} · Ответов:{' '}
+                          {round.decisions.length}/{session.members.length}
+                        </p>
+                        <p className="mt-2 text-sm">
+                          Когда все ответят, здесь появятся результаты.
+                        </p>
+                      </div>
+                    )}
+                    {finishedRound && (
+                      <>
+                        {round.roundPhase === 'ABORTED' && (
+                          <p className="notice">Раунд прерван ведущим.</p>
+                        )}
+                        {score.isError && (
+                          <p role="alert">
+                            Не удалось загрузить счёт.{' '}
+                            <button className="text-link" onClick={() => void score.refetch()}>
+                              Повторить
+                            </button>
+                          </p>
+                        )}
+                        <RoundResultPanel
+                          key={round.id}
+                          sessionId={session.id}
+                          score={score.data}
+                          currentUserId={user.id}
+                          isAdmin={
+                            isAdmin &&
+                            (!session.config.autoAdvanceRounds ||
+                              round.roundPhase === 'ABORTED' ||
+                              round.roundNumber >= session.config.numRounds)
+                          }
+                          isSessionRunning
+                          isLastRound={round.roundNumber >= session.config.numRounds}
+                          liveConnected={connected}
+                        />
+                      </>
+                    )}
+                    {isAdmin && !finishedRound && (
+                      <AbortRoundButton
+                        key={round.id}
+                        sessionId={session.id}
+                        liveConnected={connected}
+                      />
+                    )}
+                  </>
+                )}
+              </>
+            )}
+            {session.state === 'FINISHED' && (
+              <>
+                <h2 className="text-2xl font-semibold">Игра завершена</h2>
                 <>
-                  <span className="h-px w-16 bg-brass-500/60" />
-                  <OfferPhasePanel
-                    sessionId={session.id}
-                    round={round}
-                    roundSum={session.config.roundSum}
-                    playersCount={playerList.length}
-                    liveConnected={liveConnected}
-                  />
-                </>
-              )}
-              {round.roundPhase === 'OFFERS_SENT' && myRole === 'играющий' && (
-                <>
-                  <span className="h-px w-16 bg-brass-500/60" />
-                  <DecisionPhasePanel
-                    sessionId={session.id}
-                    round={round}
-                    roundSum={session.config.roundSum}
-                    playersCount={playerList.length}
-                    liveConnected={liveConnected}
-                  />
-                </>
-              )}
-              {(round.roundPhase === 'ALL_DECISIONS_RECEIVED' ||
-                round.roundPhase === 'FINISHED' ||
-                round.roundPhase === 'ABORTED') && (
-                <>
-                  <span className="h-px w-16 bg-brass-500/60" />
-                  {round.roundPhase === 'ABORTED' && (
-                    <p className="font-body italic text-blood-600">
-                      Раунд прерван ведущим.
+                  {score.isError && (
+                    <p role="alert">
+                      Не удалось загрузить счёт.{' '}
+                      <button className="text-link" onClick={() => void score.refetch()}>
+                        Повторить
+                      </button>
                     </p>
                   )}
                   <RoundResultPanel
                     sessionId={session.id}
-                    score={score}
+                    score={score.data}
                     currentUserId={user.id}
-                    isAdmin={myRole === 'ведущий'}
-                    isSessionRunning={session.state === 'RUNNING'}
-                    isLastRound={round.roundNumber >= session.config.numRounds}
-                    liveConnected={liveConnected}
+                    isAdmin={isAdmin}
+                    isSessionRunning={false}
+                    isLastRound
+                    liveConnected={connected}
                   />
                 </>
-              )}
-              {myRole === 'ведущий' &&
-                (round.roundPhase === 'WAIT_OFFERS' ||
-                  round.roundPhase === 'ALL_OFFERS_RECEIVED' ||
-                  round.roundPhase === 'OFFERS_SENT') && (
-                  <AbortRoundButton
-                    sessionId={session.id}
-                    liveConnected={liveConnected}
-                  />
-                )}
-            </>
-          )}
-
-          {session.state === 'FINISHED' && (
-            <>
-              <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600">
-                Через мгновение — в летопись…
-              </p>
-              <RoundResultPanel
-                sessionId={session.id}
-                score={score}
-                currentUserId={user.id}
-                isAdmin={myRole === 'ведущий'}
-                isSessionRunning={false}
-                isLastRound
-                liveConnected={liveConnected}
-              />
-            </>
-          )}
-
-          {session.state === 'CREATED' && myRole === 'ведущий' && (
-            <>
-              <h2 className="font-display text-xl uppercase tracking-[0.16em] text-ink-950">
-                Стол готов
-              </h2>
-              <p className="font-body italic text-ink-900/70">
-                Как только все займут места — можно объявлять начало.
-              </p>
-              {session.config.autoAdvanceRounds === true && (
-                <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600">
-                  Автопрогон раундов включён
-                </p>
-              )}
-              <button
-                type="button"
-                disabled={!liveConnected}
-                onClick={() => {
-                  try {
-                    setSendError(null);
-                    stompSend(`/app/session/${session.id}/start`);
-                  } catch (e) {
-                    setSendError(
-                      e instanceof Error ? e.message : 'Не удалось отправить команду',
-                    );
-                  }
-                }}
-                className="rounded-panel border border-ember-600/40 bg-ember-500 press-tactile min-h-11 px-6 py-3 font-display text-sm uppercase tracking-[0.2em] text-night-950 shadow-[0_4px_0_var(--color-ember-700)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-50 sm:px-8 sm:tracking-[0.24em]"
-                title={liveConnected ? '' : 'ждём подключение к живой ленте'}
-              >
-                Начать партию
-              </button>
-              {sendError !== null && (
-                <p role="alert" className="font-body text-sm italic text-blood-600">
-                  {sendError}
-                </p>
-              )}
-              <AddNpcPanel session={session} />
-            </>
-          )}
-
-          {session.state === 'CREATED' && myRole !== 'ведущий' && (
-            <p className="font-body italic text-ink-900/70">
-              Ведущий вот-вот объявит начало партии.
-            </p>
-          )}
-
-          {session.state === 'ABORTED' && (
-            <p className="font-body italic text-ink-900/70">
-              Партию пришлось прервать раньше срока.
-            </p>
-          )}
-        </div>
+                <Link className="button" to={`/session/${session.id}/stats`}>
+                  Посмотреть результаты
+                </Link>
+                <Link className="text-link" to={isAdmin ? '/lobby/new' : '/lobby'}>
+                  {isAdmin ? 'Создать ещё одну игру' : 'Найти следующую игру'}
+                </Link>
+              </>
+            )}
+            {session.state === 'ABORTED' && (
+              <>
+                <h2 className="text-2xl font-semibold">Игра прервана</h2>
+                <p>Ведущий завершил игру раньше времени.</p>
+                <Link className="button" to="/lobby">
+                  К другим играм
+                </Link>
+              </>
+            )}
+          </>
+        )}
       </Parchment>
-    </div>
+      <details
+        className="mt-6 rounded-card border border-brass-500/25 bg-white p-5"
+        open={session.state === 'CREATED'}
+      >
+        <summary>Участники и настройки · {session.members.length} игроков</summary>
+        <div className="mt-4 grid gap-6 sm:grid-cols-2">
+          <div>
+            <h2 className="mb-3 font-semibold">Участники</h2>
+            <p className="mb-2 text-sm">Ведущий: {session.admin.nickname}</p>
+            <ul className="space-y-2">
+              {session.members.map((p) => (
+                <li key={p.id} className="break-words">
+                  {p.nickname}
+                  {p.id === user.id ? ' · вы' : ''}
+                  {p.role === 'NPC' ? ' · бот' : ''}
+                  {session.config.sessionType === 'TEAM_BATTLE' &&
+                    ` · ${session.teams.find((t) => t.members.some((m) => m.id === p.id))?.name ?? ''}`}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h2 className="mb-3 font-semibold">Настройки</h2>
+            <p>
+              {session.config.numRounds} раунда · {session.config.roundSum} монет
+            </p>
+            <p>
+              {session.config.sessionType === 'TEAM_BATTLE' ? 'Командная игра' : 'Каждый за себя'}
+            </p>
+            <Link className="text-link mt-3 inline-block" to="/rules">
+              Напомнить правила
+            </Link>
+            {session.state !== 'CREATED' && (
+              <Link className="text-link mt-3 block" to={`/session/${session.id}/stats`}>
+                Подробная статистика
+              </Link>
+            )}
+          </div>
+        </div>
+      </details>
+    </main>
   );
 }

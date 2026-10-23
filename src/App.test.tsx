@@ -22,13 +22,13 @@ describe('App (title card, not logged in)', () => {
 
   it('CTA leads to /register', () => {
     renderApp();
-    const cta = screen.getByRole('link', { name: /Присесть за стол/i });
+    const cta = screen.getByRole('link', { name: /Играть с друзьями/i });
     expect(cta).toHaveAttribute('href', '/register');
   });
 
-  it('links to the style guide', () => {
+  it('offers practice without registration', () => {
     renderApp();
-    const link = screen.getByRole('link', { name: /style guide/i });
-    expect(link).toHaveAttribute('href', '/_style-guide');
+    const link = screen.getByRole('link', { name: /Попробовать без регистрации/i });
+    expect(link).toHaveAttribute('href', '/practice');
   });
 });

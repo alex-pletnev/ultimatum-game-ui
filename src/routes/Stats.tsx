@@ -18,6 +18,7 @@ import {
 } from 'recharts';
 import { Parchment } from '../components/Parchment';
 import { WaxSeal } from '../components/WaxSeal';
+import { useCurrentUser } from '../api/auth-queries';
 import { useSessionDetails } from '../api/session-queries';
 import { useSessionStats, type StatsRow } from '../api/stats-queries';
 import {
@@ -45,13 +46,9 @@ const C_INK = '#3d2f24';
 function SummaryCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div className="flex flex-col items-center gap-1 rounded-panel border border-brass-500/25 bg-parchment-50/70 px-4 py-3">
-      <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600">
-        {label}
-      </span>
+      <span className="font-mono text-sm text-brass-600">{label}</span>
       <span className="font-display text-2xl text-ink-950">{value}</span>
-      {hint !== undefined && (
-        <span className="font-body text-[11px] italic text-ink-900/60">{hint}</span>
-      )}
+      {hint !== undefined && <span className="font-body text-sm text-ink-900/70">{hint}</span>}
     </div>
   );
 }
@@ -62,18 +59,14 @@ function SummaryCards({ s, roundSum }: { s: Summary; roundSum: number }) {
     <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
       <SummaryCard label="Раундов" value={String(s.totalRounds)} />
       <SummaryCard
-        label="Офферов"
+        label="Предложений"
         value={String(s.totalOffers)}
         hint={`решено ${s.totalDecisions}`}
       />
-      <SummaryCard
-        label="Средний"
-        value={s.avgOffer.toFixed(1)}
-        hint={`из ${roundSum}`}
-      />
+      <SummaryCard label="Средний" value={s.avgOffer.toFixed(1)} hint={`из ${roundSum}`} />
       <SummaryCard label="Принято" value={pct(s.acceptRate)} />
-      <SummaryCard label="Щедрейший" value={String(s.mostGenerous)} />
-      <SummaryCard label="Скупейший" value={String(s.mostGreedy)} />
+      <SummaryCard label="Максимум" value={String(s.mostGenerous)} />
+      <SummaryCard label="Минимум" value={String(s.mostGreedy)} />
     </div>
   );
 }
@@ -82,13 +75,13 @@ function Leaderboard({ players, currentUserId }: { players: PlayerRow[]; current
   return (
     <div className="overflow-x-auto rounded-panel border border-brass-500/30">
       <table className="w-full text-sm">
-        <thead className="bg-parchment-100/60 font-mono text-[10px] uppercase tracking-[0.2em] text-brass-700">
+        <thead className="bg-parchment-100/60 font-mono text-sm text-brass-700">
           <tr>
             <th className="px-4 py-2 text-left">Игрок</th>
             <th className="px-3 py-2 text-right">Счёт</th>
-            <th className="px-3 py-2 text-right">Офферов</th>
-            <th className="px-3 py-2 text-right">Сред. offer</th>
-            <th className="px-3 py-2 text-right">Accept как resp.</th>
+            <th className="px-3 py-2 text-right">Предложений</th>
+            <th className="px-3 py-2 text-right">Среднее предложение</th>
+            <th className="px-3 py-2 text-right">Доля согласий</th>
           </tr>
         </thead>
         <tbody className="font-body text-ink-900">
@@ -100,14 +93,12 @@ function Leaderboard({ players, currentUserId }: { players: PlayerRow[]; current
                 className={`border-t border-brass-500/15 ${isMe ? 'bg-ember-500/10' : ''}`}
               >
                 <td className="px-4 py-2">
-                  <span className={`font-display uppercase tracking-[0.1em] ${isMe ? 'text-ember-700' : ''}`}>
+                  <span className={`font-display ${isMe ? 'text-ember-700' : ''}`}>
                     {p.nickname}
                     {isMe && ' · ты'}
                   </span>
                 </td>
-                <td className="px-3 py-2 text-right font-display text-lg">
-                  {p.totalScore}
-                </td>
+                <td className="px-3 py-2 text-right font-display text-lg">{p.totalScore}</td>
                 <td className="px-3 py-2 text-right">{p.offersMade}</td>
                 <td className="px-3 py-2 text-right">{p.avgProposed.toFixed(1)}</td>
                 <td className="px-3 py-2 text-right">
@@ -126,9 +117,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
     <div className="mt-10 mb-4 flex items-center gap-3">
       <span className="h-px flex-1 bg-brass-500/40" />
-      <span className="font-mono text-[11px] uppercase tracking-[0.25em] text-brass-600 sm:tracking-[0.35em]">
-        {children}
-      </span>
+      <span className="font-mono text-sm text-brass-600 ">{children}</span>
       <span className="h-px flex-1 bg-brass-500/40" />
     </div>
   );
@@ -164,7 +153,13 @@ function TimelineOffers({ timeline }: { timeline: TimelinePoint[] }) {
         <XAxis
           dataKey="round"
           tick={{ fill: C_INK, fontSize: 11 }}
-          label={{ value: 'раунд', position: 'insideBottom', offset: -4, fill: C_INK, fontSize: 10 }}
+          label={{
+            value: 'раунд',
+            position: 'insideBottom',
+            offset: -4,
+            fill: C_INK,
+            fontSize: 10,
+          }}
         />
         <YAxis tick={{ fill: C_INK, fontSize: 11 }} />
         <Tooltip
@@ -212,7 +207,13 @@ function DecisionScatter({ rows }: { rows: StatsRow[] }) {
           dataKey="x"
           name="offer"
           tick={{ fill: C_INK, fontSize: 11 }}
-          label={{ value: 'offer', position: 'insideBottom', offset: -4, fill: C_INK, fontSize: 10 }}
+          label={{
+            value: 'offer',
+            position: 'insideBottom',
+            offset: -4,
+            fill: C_INK,
+            fontSize: 10,
+          }}
         />
         <YAxis
           type="number"
@@ -235,7 +236,9 @@ function DecisionScatter({ rows }: { rows: StatsRow[] }) {
           {points.map((p, i) => (
             <Cell
               key={i}
-              fill={p.accepted === true ? C_VERDIGRIS : p.accepted === false ? C_BLOOD : `${C_BRASS}80`}
+              fill={
+                p.accepted === true ? C_VERDIGRIS : p.accepted === false ? C_BLOOD : `${C_BRASS}80`
+              }
             />
           ))}
         </Scatter>
@@ -280,8 +283,7 @@ function RawTable({ rows }: { rows: StatsRow[] }) {
       setSortDir('asc');
     }
   };
-  const sortMark = (k: SortKey) =>
-    k === sortKey ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '';
+  const sortMark = (k: SortKey) => (k === sortKey ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '');
 
   return (
     <div className="flex flex-col gap-3">
@@ -289,44 +291,77 @@ function RawTable({ rows }: { rows: StatsRow[] }) {
         type="search"
         value={filter}
         onChange={(e) => setFilter(e.target.value)}
-        placeholder="Фильтр по имени игрока…"
-        className="w-full max-w-sm rounded-panel border border-brass-500/40 bg-parchment-50/60 px-3 py-2 font-mono text-[11px] tracking-[0.05em] text-ink-900 placeholder-brass-600/60 outline-none focus:border-ember-500"
+        aria-label="Найти игрока в сделках"
+        placeholder="Имя игрока…"
+        className="w-full max-w-sm rounded-panel border border-brass-500/40 bg-parchment-50/60 px-3 py-2 font-mono text-sm text-ink-900 placeholder-brass-600/60 outline-none focus:border-ember-500"
       />
       <div className="overflow-x-auto rounded-panel border border-brass-500/30">
         <table className="w-full text-xs">
-          <thead className="bg-parchment-100/60 font-mono text-[10px] uppercase tracking-[0.15em] text-brass-700">
+          <thead className="bg-parchment-100/60 font-mono text-sm text-brass-700">
             <tr>
               <th
                 className="cursor-pointer px-3 py-2 text-left"
-                onClick={() => toggleSort('roundNumber')}
+                aria-sort={
+                  sortKey === 'roundNumber'
+                    ? sortDir === 'asc'
+                      ? 'ascending'
+                      : 'descending'
+                    : 'none'
+                }
               >
-                #{sortMark('roundNumber')}
+                <button type="button" onClick={() => toggleSort('roundNumber')}>
+                  #{sortMark('roundNumber')}
+                </button>
               </th>
               <th
                 className="cursor-pointer px-3 py-2 text-left"
-                onClick={() => toggleSort('proposerNickname')}
+                aria-sort={
+                  sortKey === 'proposerNickname'
+                    ? sortDir === 'asc'
+                      ? 'ascending'
+                      : 'descending'
+                    : 'none'
+                }
               >
-                Proposer{sortMark('proposerNickname')}
+                <button type="button" onClick={() => toggleSort('proposerNickname')}>
+                  Предложил{sortMark('proposerNickname')}
+                </button>
               </th>
               <th
                 className="cursor-pointer px-3 py-2 text-left"
-                onClick={() => toggleSort('responderNickname')}
+                aria-sort={
+                  sortKey === 'responderNickname'
+                    ? sortDir === 'asc'
+                      ? 'ascending'
+                      : 'descending'
+                    : 'none'
+                }
               >
-                Responder{sortMark('responderNickname')}
+                <button type="button" onClick={() => toggleSort('responderNickname')}>
+                  Ответил{sortMark('responderNickname')}
+                </button>
               </th>
               <th
                 className="cursor-pointer px-3 py-2 text-right"
-                onClick={() => toggleSort('amount')}
+                aria-sort={
+                  sortKey === 'amount' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'
+                }
               >
-                Offer{sortMark('amount')}
+                <button type="button" onClick={() => toggleSort('amount')}>
+                  Монеты{sortMark('amount')}
+                </button>
               </th>
               <th
                 className="cursor-pointer px-3 py-2 text-center"
-                onClick={() => toggleSort('accepted')}
+                aria-sort={
+                  sortKey === 'accepted' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'
+                }
               >
-                Decision{sortMark('accepted')}
+                <button type="button" onClick={() => toggleSort('accepted')}>
+                  Решение{sortMark('accepted')}
+                </button>
               </th>
-              <th className="px-3 py-2 text-right">Timestamp</th>
+              <th className="px-3 py-2 text-right">Время</th>
             </tr>
           </thead>
           <tbody className="font-body text-ink-900">
@@ -338,25 +373,25 @@ function RawTable({ rows }: { rows: StatsRow[] }) {
                 <td className="px-3 py-2 text-right font-display">{r.amount}</td>
                 <td className="px-3 py-2 text-center">
                   {r.accepted === true ? (
-                    <span className="rounded-token bg-verdigris-500/80 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.15em] text-parchment-100">
+                    <span className="rounded-token bg-verdigris-500/80 px-2 py-0.5 font-mono text-sm text-ink-950">
                       accept
                     </span>
                   ) : r.accepted === false ? (
-                    <span className="rounded-token bg-blood-500/80 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.15em] text-parchment-100">
+                    <span className="rounded-token bg-blood-500/80 px-2 py-0.5 font-mono text-sm text-ink-950">
                       reject
                     </span>
                   ) : (
-                    <span className="font-mono text-[10px] text-brass-600">—</span>
+                    <span className="font-mono text-sm text-brass-600">—</span>
                   )}
                 </td>
-                <td className="px-3 py-2 text-right font-mono text-[10px] text-ink-900/70">
+                <td className="px-3 py-2 text-right font-mono text-sm text-ink-900/70">
                   {r.timestamp}
                 </td>
               </tr>
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-3 py-4 text-center font-body italic text-ink-900/50">
+                <td colSpan={6} className="px-3 py-4 text-center font-body text-ink-900/70">
                   Ничего не найдено.
                 </td>
               </tr>
@@ -374,18 +409,50 @@ function RawTable({ rows }: { rows: StatsRow[] }) {
  */
 function toSlug(input: string): string {
   const table: Record<string, string> = {
-    а:'a',б:'b',в:'v',г:'g',д:'d',е:'e',ё:'e',ж:'zh',з:'z',и:'i',й:'i',
-    к:'k',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ф:'f',
-    х:'h',ц:'ts',ч:'ch',ш:'sh',щ:'sch',ъ:'',ы:'y',ь:'',э:'e',ю:'yu',я:'ya',
+    а: 'a',
+    б: 'b',
+    в: 'v',
+    г: 'g',
+    д: 'd',
+    е: 'e',
+    ё: 'e',
+    ж: 'zh',
+    з: 'z',
+    и: 'i',
+    й: 'i',
+    к: 'k',
+    л: 'l',
+    м: 'm',
+    н: 'n',
+    о: 'o',
+    п: 'p',
+    р: 'r',
+    с: 's',
+    т: 't',
+    у: 'u',
+    ф: 'f',
+    х: 'h',
+    ц: 'ts',
+    ч: 'ch',
+    ш: 'sh',
+    щ: 'sch',
+    ъ: '',
+    ы: 'y',
+    ь: '',
+    э: 'e',
+    ю: 'yu',
+    я: 'ya',
   };
-  return input
-    .toLowerCase()
-    .split('')
-    .map((c) => table[c] ?? c)
-    .join('')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 40) || 'session';
+  return (
+    input
+      .toLowerCase()
+      .split('')
+      .map((c) => table[c] ?? c)
+      .join('')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 40) || 'session'
+  );
 }
 
 function ExportButton({
@@ -404,10 +471,9 @@ function ExportButton({
     setErr(null);
     setPending(true);
     try {
-      const csv = await apiFetchText(
-        `/statistics/${encodeURIComponent(sessionId)}/csv`,
-        { withAuth: false },
-      );
+      const csv = await apiFetchText(`/statistics/${encodeURIComponent(sessionId)}/csv`, {
+        withAuth: false,
+      });
       // BOM для Excel'я — без него ру-ники в UTF-8 показываются как крякозябры.
       const blob = new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' });
       const url = URL.createObjectURL(blob);
@@ -431,13 +497,13 @@ function ExportButton({
         type="button"
         onClick={() => void download()}
         disabled={disabled || pending}
-        className="rounded-panel border border-brass-500/40 bg-transparent px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.3em] text-parchment-300/80 transition hover:border-ember-500 hover:text-ember-400 disabled:cursor-not-allowed disabled:opacity-40"
-        title="Скачать CSV с летописью сделок"
+        className="rounded-panel border border-brass-500/40 bg-transparent px-3 py-1.5 font-mono text-sm text-ink-900/80 transition hover:border-ember-500 hover:text-ember-400 disabled:cursor-not-allowed disabled:opacity-40"
+        title="Скачать все сделки в CSV"
       >
-        {pending ? 'выгружаем…' : '↓ выгрузить свиток (csv)'}
+        {pending ? 'выгружаем…' : 'Скачать CSV'}
       </button>
       {err !== null && (
-        <span role="alert" className="font-body text-[11px] italic text-blood-500">
+        <span role="alert" className="font-body text-sm text-blood-500">
           {err}
         </span>
       )}
@@ -451,20 +517,19 @@ export function Stats() {
   // Публичная страница — открывается по прямой ссылке без auth
   // (BACKEND-FIX-public-stats-endpoint.md).
   const { id } = useParams<{ id: string }>();
-  const { data: session } = useSessionDetails(id);
-  const { data: rows, isLoading, isError } = useSessionStats(id);
+  const details = useSessionDetails(id);
+  const session = details.data;
+  const { data: user } = useCurrentUser();
+  const { data: rows, isLoading, isError, refetch } = useSessionStats(id);
 
   const roundSum = session?.config.roundSum ?? 100;
 
   const summary = useMemo(() => computeSummary(rows ?? []), [rows]);
-  const leaderboard = useMemo(
-    () => computeLeaderboard(rows ?? [], roundSum),
-    [rows, roundSum],
-  );
+  const leaderboard = useMemo(() => computeLeaderboard(rows ?? [], roundSum), [rows, roundSum]);
   const histogram = useMemo(() => computeHistogram(rows ?? [], roundSum), [rows, roundSum]);
   const timeline = useMemo(() => computeTimeline(rows ?? []), [rows]);
 
-  if (isLoading) {
+  if (isLoading || details.isLoading) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-10 sm:px-8 sm:py-16">
         <div
@@ -476,16 +541,15 @@ export function Stats() {
     );
   }
 
+  const failed = isError || details.isError;
   const hasData = (rows?.length ?? 0) > 0;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-8 sm:py-16">
-      <header className="mb-8 flex items-baseline justify-between border-b border-brass-500/30 pb-6">
+      <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-baseline sm:justify-between border-b border-brass-500/30 pb-6">
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-brass-500">
-            Летопись сделок
-          </p>
-          <h1 className="mt-2 font-display text-3xl uppercase tracking-[0.16em] text-parchment-100">
+          <p className="font-mono text-sm text-brass-600">Результаты игры</p>
+          <h1 className="mt-2 font-display text-3xl text-ink-950">
             {session?.displayName ?? 'Партия'}
           </h1>
         </div>
@@ -500,83 +564,100 @@ export function Stats() {
           {id !== undefined && (
             <Link
               to={`/session/${id}`}
-              className="font-mono text-[10px] uppercase tracking-[0.3em] text-parchment-300/60 hover:text-ember-400"
+              className="font-mono text-sm text-ink-900/70 hover:text-ember-400"
             >
-              ← к столу
+              ← К игре
             </Link>
           )}
-          <Link
-            to="/lobby"
-            className="font-mono text-[10px] uppercase tracking-[0.3em] text-parchment-300/60 hover:text-ember-400"
-          >
-            ← в лобби
+          <Link to="/lobby" className="font-mono text-sm text-ink-900/70 hover:text-ember-400">
+            ← Все игры
           </Link>
         </div>
       </header>
 
-      {isError && (
+      {failed && (
         <Parchment className="text-center">
           <div className="flex flex-col items-center gap-3">
             <WaxSeal size={48} monogram="!" />
-            <p className="font-body italic text-blood-600">
-              Не удалось загрузить статистику этой партии.
-            </p>
+            <p className="font-body text-blood-600">Не удалось загрузить статистику этой партии.</p>
+            <button
+              className="button button-secondary"
+              onClick={() => {
+                void refetch();
+                void details.refetch();
+              }}
+            >
+              Повторить
+            </button>
           </div>
         </Parchment>
       )}
 
-      {!isError && !hasData && (
+      {!failed && !hasData && (
         <Parchment className="text-center">
           <div className="flex flex-col items-center gap-3">
             <WaxSeal size={48} monogram="?" />
-            <p className="font-body italic text-ink-900/70">
-              Партия ещё не игралась — как только пойдут офферы, здесь появится
-              летопись.
+            <p className="font-body text-ink-900/70">
+              Пока нет предложений. Результаты появятся после начала игры.
             </p>
           </div>
         </Parchment>
       )}
 
-      {!isError && hasData && (
+      {!failed && hasData && (
         <>
           <Parchment>
+            <h2 className="mb-4 text-2xl font-semibold">
+              {leaderboard.length
+                ? `Лучший результат: ${leaderboard[0]!.totalScore} монет`
+                : 'Итоги игры'}
+            </h2>
+            <p className="mb-5 text-ink-900/70">
+              {leaderboard
+                .filter((p) => p.totalScore === leaderboard[0]?.totalScore)
+                .map((p) => p.nickname)
+                .join(', ')}
+            </p>
             <SectionTitle>Итоги партии</SectionTitle>
             <SummaryCards s={summary} roundSum={roundSum} />
           </Parchment>
 
           <Parchment className="mt-6">
-            <SectionTitle>Игрок за игроком</SectionTitle>
-            <Leaderboard players={leaderboard} currentUserId={session?.admin.id ?? ''} />
+            <SectionTitle>Рейтинг игроков</SectionTitle>
+            <Leaderboard players={leaderboard} currentUserId={user?.id ?? ''} />
           </Parchment>
 
-          <Parchment className="mt-6">
-            <SectionTitle>Распределение офферов</SectionTitle>
-            <OfferHistogram bins={histogram} />
-            <p className="mt-2 text-center font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600">
-              зелёные — приняты · красные — отвергнуты · тёмные — без ответа
-            </p>
-          </Parchment>
+          <details className="mt-6 rounded-card border border-brass-500/25 bg-white p-5">
+            <summary>Подробный анализ и все сделки</summary>
+            <Parchment className="mt-6">
+              <SectionTitle>Размер предложений</SectionTitle>
+              <OfferHistogram bins={histogram} />
+              <p className="mt-2 text-center font-mono text-sm text-brass-600">
+                зелёные — приняты · красные — отвергнуты · тёмные — без ответа
+              </p>
+            </Parchment>
 
-          <Parchment className="mt-6">
-            <SectionTitle>Как менялась стратегия</SectionTitle>
-            <TimelineOffers timeline={timeline} />
-            <p className="mt-2 text-center font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600">
-              сплошная — средний оффер · пунктир — % принятых
-            </p>
-          </Parchment>
+            <Parchment className="mt-6">
+              <SectionTitle>Как менялась стратегия</SectionTitle>
+              <TimelineOffers timeline={timeline} />
+              <p className="mt-2 text-center font-mono text-sm text-brass-600">
+                сплошная — среднее предложение · пунктир — % принятых
+              </p>
+            </Parchment>
 
-          <Parchment className="mt-6">
-            <SectionTitle>Карта решений</SectionTitle>
-            <DecisionScatter rows={rows ?? []} />
-            <p className="mt-2 text-center font-mono text-[10px] uppercase tracking-[0.3em] text-brass-600">
-              каждая точка — одна сделка; цвет — итог
-            </p>
-          </Parchment>
+            <Parchment className="mt-6">
+              <SectionTitle>Карта решений</SectionTitle>
+              <DecisionScatter rows={rows ?? []} />
+              <p className="mt-2 text-center font-mono text-sm text-brass-600">
+                каждая точка — одна сделка; цвет — итог
+              </p>
+            </Parchment>
 
-          <Parchment className="mt-6">
-            <SectionTitle>Летопись сырых сделок</SectionTitle>
-            <RawTable rows={rows ?? []} />
-          </Parchment>
+            <Parchment className="mt-6">
+              <SectionTitle>Все сделки</SectionTitle>
+              <RawTable rows={rows ?? []} />
+            </Parchment>
+          </details>
         </>
       )}
     </div>

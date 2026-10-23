@@ -74,6 +74,7 @@ export function computeLeaderboard(rows: StatsRow[], roundSum: number): PlayerRo
     pr.offersMade++;
     proposedSum.set(r.proposerId, (proposedSum.get(r.proposerId) ?? 0) + r.amount);
 
+    if (!r.responderId) continue;
     const rp = ensure(r.responderId, r.responderNickname);
     rp.offersReceived++;
 
@@ -84,10 +85,7 @@ export function computeLeaderboard(rows: StatsRow[], roundSum: number): PlayerRo
     if (r.accepted !== null) {
       respondedCount.set(r.responderId, (respondedCount.get(r.responderId) ?? 0) + 1);
       if (r.accepted === true) {
-        acceptedAsResponder.set(
-          r.responderId,
-          (acceptedAsResponder.get(r.responderId) ?? 0) + 1,
-        );
+        acceptedAsResponder.set(r.responderId, (acceptedAsResponder.get(r.responderId) ?? 0) + 1);
       }
     }
   }
