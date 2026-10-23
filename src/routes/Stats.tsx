@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
+import { StatsProgress } from './StatsProgress';
 import { apiFetchText } from '../api/client';
 import {
   Bar,
@@ -522,12 +523,26 @@ export function Stats() {
   const { data: user } = useCurrentUser();
   const { data: rows, isLoading, isError, refetch } = useSessionStats(id);
 
+  const [filterPlayer, setFilterPlayer] = useState('');
+  const [filterRound, setFilterRound] = useState('');
+  const selectedRows = useMemo(
+    () =>
+      (rows ?? []).filter(
+        (r) =>
+          (!filterPlayer || r.proposerId === filterPlayer || r.responderId === filterPlayer) &&
+          (!filterRound || r.roundNumber === Number(filterRound)),
+      ),
+    [rows, filterPlayer, filterRound],
+  );
   const roundSum = session?.config.roundSum ?? 100;
 
   const summary = useMemo(() => computeSummary(rows ?? []), [rows]);
   const leaderboard = useMemo(() => computeLeaderboard(rows ?? [], roundSum), [rows, roundSum]);
-  const histogram = useMemo(() => computeHistogram(rows ?? [], roundSum), [rows, roundSum]);
-  const timeline = useMemo(() => computeTimeline(rows ?? []), [rows]);
+  const histogram = useMemo(
+    () => computeHistogram(selectedRows, roundSum),
+    [selectedRows, roundSum],
+  );
+  const timeline = useMemo(() => computeTimeline(selectedRows), [selectedRows]);
 
   if (isLoading || details.isLoading) {
     return (
@@ -627,8 +642,67 @@ export function Stats() {
             <Leaderboard players={leaderboard} currentUserId={user?.id ?? ''} />
           </Parchment>
 
+          <StatsProgress rows={rows ?? []} roundSum={roundSum} players={leaderboard} />
+          {session?.config.sessionType === 'DICTATOR' && (
+            <p className="notice mt-6">
+              Режим «Диктатор»: предложения принимаются автоматически. 100% принятых здесь — правило
+              режима, а не согласие игроков.
+            </p>
+          )}
           <details className="mt-6 rounded-card border border-brass-500/25 bg-white p-5">
             <summary>Подробный анализ и все сделки</summary>
+            <div className="my-5 grid gap-3 sm:grid-cols-2">
+              <label className="flex flex-col gap-2">
+                Сделки игрока
+                <select
+                  className="rounded-panel border bg-white p-3"
+                  value={filterPlayer}
+                  onChange={(e) => setFilterPlayer(e.target.value)}
+                >
+                  <option value="">Все игроки</option>
+                  {leaderboard.map((p) => (
+                    <option key={p.userId} value={p.userId}>
+                      {p.nickname}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-2">
+                Раунд
+                <select
+                  className="rounded-panel border bg-white p-3"
+                  value={filterRound}
+                  onChange={(e) => setFilterRound(e.target.value)}
+                >
+                  <option value="">Все раунды</option>
+                  {[...new Set(rows?.map((r) => r.roundNumber))]
+                    .sort((a, b) => a - b)
+                    .map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                </select>
+              </label>
+            </div>
+            <p role="status" className="text-sm">
+              Выбрано сделок: {selectedRows.length}. Фильтры применяются к анализу ниже; основной
+              рейтинг и CSV охватывают всю партию.
+            </p>
+            {(filterPlayer || filterRound) && (
+              <button
+                className="text-link mt-3"
+                onClick={() => {
+                  setFilterPlayer('');
+                  setFilterRound('');
+                }}
+              >
+                Сбросить фильтры
+              </button>
+            )}
+            <div className="mt-4">
+              <SummaryCards s={computeSummary(selectedRows)} roundSum={roundSum} />
+            </div>
             <Parchment className="mt-6">
               <SectionTitle>Размер предложений</SectionTitle>
               <OfferHistogram bins={histogram} />
@@ -647,7 +721,7 @@ export function Stats() {
 
             <Parchment className="mt-6">
               <SectionTitle>Карта решений</SectionTitle>
-              <DecisionScatter rows={rows ?? []} />
+              <DecisionScatter rows={selectedRows} />
               <p className="mt-2 text-center font-mono text-sm text-brass-600">
                 каждая точка — одна сделка; цвет — итог
               </p>
@@ -655,7 +729,7 @@ export function Stats() {
 
             <Parchment className="mt-6">
               <SectionTitle>Все сделки</SectionTitle>
-              <RawTable rows={rows ?? []} />
+              <RawTable rows={selectedRows} />
             </Parchment>
           </details>
         </>

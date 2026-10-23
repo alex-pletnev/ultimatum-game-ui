@@ -3,14 +3,14 @@ import { apiRegister, ensureBackendUp, openContextWithToken, uniqueNickname } fr
 
 test.beforeAll(ensureBackendUp);
 
-test('player sees games without host controls', async ({ browser }) => {
+test('player can create their own game', async ({ browser }) => {
   const player = await apiRegister(uniqueNickname('player'), 'PLAYER');
   const context = await openContextWithToken(browser, player.accessToken);
   try {
     const page = await context.newPage();
     await page.goto('/lobby');
     await expect(page.getByRole('heading', { name: 'Игры', exact: true })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Создать игру', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Создать игру', exact: true })).toBeVisible();
   } finally {
     await context.close();
   }

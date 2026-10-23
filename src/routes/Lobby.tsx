@@ -16,7 +16,7 @@ export function Lobby() {
   const sessions = [...(data?.content ?? [])].sort((a, b) =>
     b.createdAt.localeCompare(a.createdAt),
   );
-  const canCreate = user?.role === 'ADMIN';
+  const canCreate = user?.role === 'ADMIN' || user?.role === 'PLAYER';
   const recent = user ? readRecentGame(user.id) : null;
   return (
     <main className="page-container py-10">
@@ -36,6 +36,22 @@ export function Lobby() {
           </Link>
         )}
       </header>
+      {canCreate && (
+        <div className="mb-6 grid gap-3 sm:grid-cols-2">
+          <Link className="choice-card" to="/play">
+            <span>
+              <strong>Играть с ботом</strong>
+              <span className="mt-1 block text-sm">Начните сразу, без приглашений и ожидания.</span>
+            </span>
+          </Link>
+          <Link className="choice-card" to="/history">
+            <span>
+              <strong>Мои игры</strong>
+              <span className="mt-1 block text-sm">Продолжите партию или откройте результаты.</span>
+            </span>
+          </Link>
+        </div>
+      )}
       {recent && (
         <aside className="notice mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -129,7 +145,7 @@ export function Lobby() {
         <Link className="text-link" to="/practice">
           Учебный раунд
         </Link>
-        {canCreate && (
+        {user?.role === 'ADMIN' && (
           <Link className="text-link" to="/npc">
             Настроить ботов
           </Link>

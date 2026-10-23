@@ -21,7 +21,9 @@ export function Register() {
   const register = useQuickRegister();
   const token = useAccessToken();
   const navigate = useNavigate();
-  const destination = next ?? (role === 'ADMIN' ? '/lobby/new' : '/lobby');
+  const destination =
+    next ??
+    (search.get('intent') === 'solo' ? '/play' : role === 'ADMIN' ? '/lobby/new' : '/lobby');
 
   if (token !== null && !register.isPending) return <Navigate to={destination} replace />;
 
@@ -34,7 +36,7 @@ export function Register() {
     }
     setLocalError(null);
     register.mutate(
-      { nickname: nickname.trim(), role },
+      { nickname: nickname.trim(), role: 'PLAYER' },
       { onSuccess: () => navigate(destination, { replace: true }) },
     );
   };
@@ -71,7 +73,9 @@ export function Register() {
             hint="От 3 до 42 символов"
             error={localError ?? undefined}
           />
-          {!next && <RoleChoice value={role} onChange={setRole} />}
+          {!next && search.get('intent') !== 'solo' && (
+            <RoleChoice value={role} onChange={setRole} />
+          )}
           {(localError ?? serverError) && (
             <p role="alert" className="error-message">
               {localError ?? serverError}

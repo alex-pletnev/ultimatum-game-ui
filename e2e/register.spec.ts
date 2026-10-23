@@ -40,6 +40,6 @@ test('create game intent registers a host and opens setup directly', async ({ pa
   await page.getByRole('radio', { name: /Создать игру/ }).check();
   const request = page.waitForRequest((r) => r.url().includes('/auth/quick-register'));
   await page.getByRole('button', { name: 'Продолжить', exact: true }).click();
-  expect((await request).postDataJSON().role).toBe('ADMIN');
+  expect((await request).postDataJSON().role).toBe('PLAYER');
   await expect(page).toHaveURL('/lobby/new');
 });

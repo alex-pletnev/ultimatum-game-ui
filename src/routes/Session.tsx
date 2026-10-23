@@ -1,12 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Link, Navigate, useHref, useParams } from 'react-router';
+import { Link, Navigate, useHref, useParams, useNavigate } from 'react-router';
 import { AddNpcPanel } from '../components/AddNpcPanel';
 import { Parchment } from '../components/Parchment';
 import { SessionJoin } from '../components/SessionJoin';
 import { rememberGame } from '../api/recent-game';
 import { useAccessToken } from '../api/auth-storage';
 import { useCurrentUser } from '../api/auth-queries';
-import { useCurrentRound, useSessionDetails, useSessionScore } from '../api/session-queries';
+import {
+  useCurrentRound,
+  useSessionDetails,
+  useSessionScore,
+  useRematch,
+} from '../api/session-queries';
 import { useSessionLiveSync } from '../api/ws/useSessionLiveSync';
 import { useGameCommand } from '../api/ws/useGameCommand';
 import type {
@@ -32,6 +37,7 @@ type PhaseProps = {
   roundSum: number;
   playersCount: number;
   liveConnected: boolean;
+  dictator?: boolean;
 };
 
 export function OfferPhasePanel({
@@ -40,6 +46,7 @@ export function OfferPhasePanel({
   roundSum,
   playersCount,
   liveConnected,
+  dictator = false,
 }: PhaseProps) {
   const command = useGameCommand(`${round.id}:offer`);
   const [amount, setAmount] = useState(Math.floor(roundSum / 2));
@@ -58,7 +65,10 @@ export function OfferPhasePanel({
       <div>
         <h3 className="text-2xl font-semibold">Сколько предложите другому игроку?</h3>
         <p className="mt-2 text-ink-900/70">
-          Разделите {roundSum} монет. Если предложение отклонят, оба получите 0 за эту сделку.
+          Разделите {roundSum} монет.{' '}
+          {dictator
+            ? 'В режиме «Диктатор» другой игрок автоматически получит предложенную долю — отказаться нельзя.'
+            : 'Если предложение отклонят, оба получите 0 за эту сделку.'}
         </p>
       </div>
       <div className="split-preview">
@@ -180,6 +190,7 @@ export function AbortRoundButton({
 }: {
   sessionId: string;
   liveConnected: boolean;
+  dictator?: boolean;
 }) {
   const [confirm, setConfirm] = useState(false);
   const command = useGameCommand(`${sessionId}:abort`);
@@ -233,6 +244,7 @@ export function RoundResultPanel({
   isSessionRunning: boolean;
   isLastRound: boolean;
   liveConnected: boolean;
+  dictator?: boolean;
 }) {
   const command = useGameCommand(`${sessionId}:${score?.roundsCompleted}:next`);
   return (
@@ -343,6 +355,8 @@ function readiness(session: SessionWithTeamsAndMembersResponse): string | null {
 }
 
 export function Session() {
+  const navigate = useNavigate();
+  const rematch = useRematch();
   const token = useAccessToken();
   const { id } = useParams<{ id: string }>();
   const profile = useCurrentUser();
@@ -413,7 +427,13 @@ export function Session() {
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <h1 className="text-3xl font-semibold">{session.displayName}</h1>
           <span className="badge">
-            {isAdmin ? 'Вы — ведущий' : isPlayer ? 'Вы — игрок' : 'Приглашение'}
+            {isAdmin
+              ? isPlayer
+                ? 'Вы играете и ведёте'
+                : 'Вы — ведущий'
+              : isPlayer
+                ? 'Вы — игрок'
+                : 'Приглашение'}
           </span>
         </div>
       </header>
@@ -500,7 +520,9 @@ export function Session() {
                         className="badge"
                         aria-current={round.roundPhase === 'OFFERS_SENT' ? 'step' : undefined}
                       >
-                        2. Ответы
+                        {session.config.sessionType === 'DICTATOR'
+                          ? '2. Автоматический раздел'
+                          : '2. Ответы'}
                       </li>
                       <li className="badge" aria-current={finishedRound ? 'step' : undefined}>
                         3. Результаты
@@ -513,6 +535,7 @@ export function Session() {
                     )}
                     {isPlayer && round.roundPhase === 'WAIT_OFFERS' && (
                       <OfferPhasePanel
+                        dictator={session.config.sessionType === 'DICTATOR'}
                         key={`${round.id}:offer`}
                         sessionId={session.id}
                         round={round}
@@ -613,6 +636,29 @@ export function Session() {
                 <Link className="button" to={`/session/${session.id}/stats`}>
                   Посмотреть результаты
                 </Link>
+                {isAdmin && (
+                  <>
+                    <button
+                      className="button button-secondary"
+                      disabled={rematch.isPending}
+                      onClick={() =>
+                        rematch.mutate(session.id, {
+                          onSuccess: (game) => navigate(`/session/${game.id}`),
+                        })
+                      }
+                    >
+                      {rematch.isPending ? 'Создаём реванш…' : 'Реванш с теми же настройками'}
+                    </button>
+                    <p className="text-sm">
+                      Новая партия и новая ссылка. Пригласите друзей или добавьте ботов заново.
+                    </p>
+                    {rematch.isError && (
+                      <p role="alert" className="error-message">
+                        Не удалось создать реванш. Попробуйте ещё раз.
+                      </p>
+                    )}
+                  </>
+                )}
                 <Link className="text-link" to={isAdmin ? '/lobby/new' : '/lobby'}>
                   {isAdmin ? 'Создать ещё одну игру' : 'Найти следующую игру'}
                 </Link>
@@ -657,7 +703,11 @@ export function Session() {
               {session.config.numRounds} раунда · {session.config.roundSum} монет
             </p>
             <p>
-              {session.config.sessionType === 'TEAM_BATTLE' ? 'Командная игра' : 'Каждый за себя'}
+              {session.config.sessionType === 'DICTATOR'
+                ? 'Диктатор · без права отказа'
+                : session.config.sessionType === 'TEAM_BATTLE'
+                  ? 'Командная игра'
+                  : 'Каждый за себя'}
             </p>
             <Link className="text-link mt-3 inline-block" to="/rules">
               Напомнить правила

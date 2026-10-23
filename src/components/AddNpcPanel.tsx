@@ -5,7 +5,8 @@ import type { NpcStrategy, SessionWithTeamsAndMembersResponse } from '../api/typ
 import { NPC_STRATEGIES, defaultNpcParams } from '../api/npc-strategies';
 
 export function AddNpcPanel({ session }: { session: SessionWithTeamsAndMembersResponse }) {
-  const list = useNpcList();
+  const canManageBots = session.admin.role === 'ADMIN';
+  const list = useNpcList(canManageBots);
   const join = useJoinNpc(session.id);
   const bulk = useBulkAttachNpcs(session.id);
   const [strategy, setStrategy] = useState<NpcStrategy>('FAIR');
@@ -69,88 +70,90 @@ export function AddNpcPanel({ session }: { session: SessionWithTeamsAndMembersRe
             Не удалось добавить ботов. Проверьте свободные места и попробуйте снова.
           </p>
         )}
-        <details>
-          <summary>Выбрать ранее созданного бота</summary>
-          <div className="mt-3 flex flex-col gap-3">
-            {list.isLoading && <p role="status">Загружаем ботов…</p>}
-            {list.isError && (
-              <p role="alert">
-                Не удалось загрузить ботов.{' '}
-                <button className="text-link" onClick={() => void list.refetch()}>
-                  Повторить
-                </button>
-              </p>
-            )}
-            {!list.isLoading && !list.isError && !available.length && (
-              <p>
-                Свободных готовых ботов нет. Можно заполнить места кнопкой выше или{' '}
-                <Link className="text-link" to="/npc">
-                  создать своего бота
-                </Link>
-                .
-              </p>
-            )}
-            {available.length > 0 && (
-              <>
-                <label className="flex flex-col gap-2">
-                  Бот
-                  <select
-                    className="rounded-panel border px-3 py-2"
-                    value={npcId}
-                    onChange={(e) => setNpcId(e.target.value)}
-                  >
-                    <option value="">Выберите бота</option>
-                    {available.map((n) => (
-                      <option key={n.id} value={n.id}>
-                        {n.nickname}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                {session.config.sessionType === 'TEAM_BATTLE' && (
+        {canManageBots && (
+          <details>
+            <summary>Выбрать ранее созданного бота</summary>
+            <div className="mt-3 flex flex-col gap-3">
+              {list.isLoading && <p role="status">Загружаем ботов…</p>}
+              {list.isError && (
+                <p role="alert">
+                  Не удалось загрузить ботов.{' '}
+                  <button className="text-link" onClick={() => void list.refetch()}>
+                    Повторить
+                  </button>
+                </p>
+              )}
+              {!list.isLoading && !list.isError && !available.length && (
+                <p>
+                  Свободных готовых ботов нет. Можно заполнить места кнопкой выше или{' '}
+                  <Link className="text-link" to="/npc">
+                    создать своего бота
+                  </Link>
+                  .
+                </p>
+              )}
+              {available.length > 0 && (
+                <>
                   <label className="flex flex-col gap-2">
-                    Команда
+                    Бот
                     <select
                       className="rounded-panel border px-3 py-2"
-                      value={teamId}
-                      onChange={(e) => setTeamId(e.target.value)}
+                      value={npcId}
+                      onChange={(e) => setNpcId(e.target.value)}
                     >
-                      {session.teams.map((t) => (
-                        <option
-                          key={t.id}
-                          value={t.id}
-                          disabled={t.members.length >= Math.floor(session.config.numPlayers / 2)}
-                        >
-                          {t.name} · {t.members.length} игроков
+                      <option value="">Выберите бота</option>
+                      {available.map((n) => (
+                        <option key={n.id} value={n.id}>
+                          {n.nickname}
                         </option>
                       ))}
                     </select>
                   </label>
-                )}
-                <button
-                  className="button button-secondary"
-                  disabled={!npcId || !teamAvailable || join.isPending || bulk.isPending}
-                  onClick={() =>
-                    join.mutate(
-                      {
-                        npcId,
-                        teamId: session.config.sessionType === 'TEAM_BATTLE' ? teamId : null,
-                      },
-                      { onSuccess: () => setNpcId('') },
-                    )
-                  }
-                >
-                  Добавить выбранного бота
-                </button>
-              </>
-            )}
-            {join.isError && (
-              <p role="alert" className="error-message">
-                Не удалось добавить бота. Попробуйте другого.
-              </p>
-            )}
-          </div>
-        </details>
+                  {session.config.sessionType === 'TEAM_BATTLE' && (
+                    <label className="flex flex-col gap-2">
+                      Команда
+                      <select
+                        className="rounded-panel border px-3 py-2"
+                        value={teamId}
+                        onChange={(e) => setTeamId(e.target.value)}
+                      >
+                        {session.teams.map((t) => (
+                          <option
+                            key={t.id}
+                            value={t.id}
+                            disabled={t.members.length >= Math.floor(session.config.numPlayers / 2)}
+                          >
+                            {t.name} · {t.members.length} игроков
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                  <button
+                    className="button button-secondary"
+                    disabled={!npcId || !teamAvailable || join.isPending || bulk.isPending}
+                    onClick={() =>
+                      join.mutate(
+                        {
+                          npcId,
+                          teamId: session.config.sessionType === 'TEAM_BATTLE' ? teamId : null,
+                        },
+                        { onSuccess: () => setNpcId('') },
+                      )
+                    }
+                  >
+                    Добавить выбранного бота
+                  </button>
+                </>
+              )}
+              {join.isError && (
+                <p role="alert" className="error-message">
+                  Не удалось добавить бота. Попробуйте другого.
+                </p>
+              )}
+            </div>
+          </details>
+        )}
       </div>
     </details>
   );

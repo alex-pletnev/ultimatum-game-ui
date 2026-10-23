@@ -82,10 +82,10 @@ describe('CreateSession', () => {
     vi.restoreAllMocks();
   });
 
-  it('redirects PLAYER to /lobby (guard)', async () => {
+  it('lets a PLAYER host a game', async () => {
     mockUserWith('PLAYER');
     renderCreate();
-    await waitFor(() => expect(screen.getByText('lobby')).toBeInTheDocument());
+    expect(await screen.findByRole('heading', { name: 'Создать игру' })).toBeInTheDocument();
   });
 
   it('redirects to / if no token', async () => {
@@ -119,6 +119,7 @@ describe('CreateSession', () => {
     const body = JSON.parse(postCall![1]!.body as string);
     expect(body).toMatchObject({
       displayName: 'Круг наивных',
+      hostPlays: true,
       config: {
         sessionType: 'FREE_FOR_ALL',
         numRounds: 3,

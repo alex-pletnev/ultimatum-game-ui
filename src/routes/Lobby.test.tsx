@@ -169,7 +169,7 @@ describe('Lobby', () => {
     );
   });
 
-  it('hides "Учредить партию" CTA for PLAYER', async () => {
+  it('shows create game CTA for PLAYER', async () => {
     mockFetchWithSessions(
       jsonResponse(200, { content: [], totalElements: 0, totalPages: 0, number: 0, size: 30 }),
     );
@@ -177,6 +177,6 @@ describe('Lobby', () => {
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: /Пока нет открытых игр/i })).toBeInTheDocument(),
     );
-    expect(screen.queryByRole('link', { name: /Создать игру/i })).toBeNull();
+    expect(screen.getAllByRole('link', { name: /Создать игру/i })[0]).toBeInTheDocument();
   });
 });

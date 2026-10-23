@@ -5,6 +5,8 @@ import { computeLeaderboard } from '../routes/Stats.aggregations';
 import { useAccessToken } from './auth-storage';
 import type {
   CreateSessionRequest,
+  NpcStrategy,
+  SessionType,
   Page,
   RoundResponse,
   SessionResponse,
@@ -42,7 +44,7 @@ export function useOpenSessions(page = 0, size = 8) {
   });
 }
 
-/** Учреждение партии — только для ADMIN. Backend возвращает SessionWithTeamsAndMembersResponse. */
+/** Create a game owned by the current player. */
 export function useCreateSession() {
   const qc = useQueryClient();
   return useMutation({
@@ -150,5 +152,39 @@ export function useCurrentRound(id: string | undefined, enabled = true) {
     enabled: enabled && token !== null && id !== undefined && id.length > 0,
     staleTime: 5_000,
     refetchInterval: 10_000,
+  });
+}
+
+export function useMySessions(page = 0) {
+  const token = useAccessToken();
+  return useQuery({
+    queryKey: ['session', 'mine', page],
+    queryFn: () => apiFetch<Page<SessionResponse>>(`/session/mine?page=${page}&pageSize=12`),
+    enabled: token !== null,
+    refetchOnMount: 'always',
+  });
+}
+
+export function useSoloSession() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { strategy: NpcStrategy; sessionType: SessionType; numRounds: number }) =>
+      apiFetch<SessionWithTeamsAndMembersResponse>('/session/solo', { method: 'POST', body }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: sessionKeys.all });
+    },
+  });
+}
+
+export function useRematch() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiFetch<SessionWithTeamsAndMembersResponse>(`/session/${encodeURIComponent(id)}/rematch`, {
+        method: 'POST',
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: sessionKeys.all });
+    },
   });
 }

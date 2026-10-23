@@ -16,6 +16,7 @@ export function CreateSession() {
   const [numRounds, setNumRounds] = useState(3);
   const [numPlayers, setNumPlayers] = useState(4);
   const [roundSum, setRoundSum] = useState(100);
+  const [hostPlays, setHostPlays] = useState(true);
   const [autoAdvanceRounds, setAutoAdvanceRounds] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const field = useRef<HTMLInputElement>(null);
@@ -23,7 +24,7 @@ export function CreateSession() {
   const navigate = useNavigate();
 
   if (token === null) return <Navigate to="/register?intent=host" replace />;
-  if (user && user.role !== 'ADMIN') return <Navigate to="/lobby" replace />;
+  if (user && !['ADMIN', 'PLAYER'].includes(user.role)) return <Navigate to="/lobby" replace />;
   if (!user)
     return (
       <p className="page-container py-10" role={isError ? 'alert' : 'status'}>
@@ -56,6 +57,7 @@ export function CreateSession() {
     create.mutate(
       {
         displayName: name,
+        hostPlays,
         config: {
           sessionType,
           numRounds,
@@ -78,9 +80,71 @@ export function CreateSession() {
             <h1 className="mt-2 text-3xl font-semibold">Создать игру</h1>
             <p className="mt-3 text-ink-900/70">
               Настройки уже готовы. Создайте игру, затем отправьте друзьям ссылку. Вы управляете
-              раундами и не занимаете место игрока.
+              раундами и можете играть вместе со всеми.
             </p>
           </div>
+          <fieldset className="grid gap-2 sm:grid-cols-2">
+            <legend className="mb-3 font-semibold">Готовые сценарии</legend>
+            {[
+              {
+                title: 'Быстрая игра',
+                hint: '3 раунда · 4 игрока',
+                mode: 'FREE_FOR_ALL',
+                rounds: 3,
+                players: 4,
+              },
+              {
+                title: 'Вечер с друзьями',
+                hint: '5 раундов · 8 игроков',
+                mode: 'FREE_FOR_ALL',
+                rounds: 5,
+                players: 8,
+              },
+              {
+                title: 'Командный вызов',
+                hint: '5 раундов · 2 команды',
+                mode: 'TEAM_BATTLE',
+                rounds: 5,
+                players: 8,
+              },
+              {
+                title: 'Диктатор',
+                hint: '3 раунда · без права отказа',
+                mode: 'DICTATOR',
+                rounds: 3,
+                players: 4,
+              },
+            ].map((preset) => (
+              <button
+                key={preset.title}
+                type="button"
+                className="choice-card text-left"
+                onClick={() => {
+                  setSessionType(preset.mode as SessionType);
+                  setNumRounds(preset.rounds);
+                  setNumPlayers(preset.players);
+                }}
+              >
+                <span>
+                  <strong>{preset.title}</strong>
+                  <span className="mt-1 block text-sm">{preset.hint}</span>
+                </span>
+              </button>
+            ))}
+          </fieldset>
+          <label className="choice-card">
+            <input
+              type="checkbox"
+              checked={hostPlays}
+              onChange={(e) => setHostPlays(e.target.checked)}
+            />
+            <span>
+              <strong>Я тоже играю</strong>
+              <span className="mt-1 block text-sm">
+                Вы займёте одно место. Снимите галочку, чтобы только вести игру.
+              </span>
+            </span>
+          </label>
           <InkField
             ref={field}
             label="Название игры"
@@ -97,11 +161,15 @@ export function CreateSession() {
             onChange={setNumPlayers}
             min={2}
             max={120}
-            hint="Максимум участников, без ведущего. Начать можно от двух игроков."
+            hint="Максимум участников, включая вас, если вы играете. Начать можно от двух игроков."
           />
           <div className="notice">
             {numRounds} раунда · {roundSum} монет на сделку ·{' '}
-            {sessionType === 'TEAM_BATTLE' ? 'две команды' : 'каждый за себя'}
+            {sessionType === 'DICTATOR'
+              ? 'диктатор · без отказа'
+              : sessionType === 'TEAM_BATTLE'
+                ? 'две команды'
+                : 'каждый за себя'}
           </div>
           <details>
             <summary>Дополнительные настройки</summary>
@@ -114,6 +182,11 @@ export function CreateSession() {
                       value: 'FREE_FOR_ALL',
                       label: 'Каждый за себя',
                       hint: 'Получайте предложения от случайных игроков.',
+                    },
+                    {
+                      value: 'DICTATOR',
+                      label: 'Диктатор',
+                      hint: 'Раздел принимается автоматически. Сколько вы отдадите без риска отказа?',
                     },
                     {
                       value: 'TEAM_BATTLE',

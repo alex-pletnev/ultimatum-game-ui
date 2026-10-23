@@ -27,6 +27,7 @@ test('fill seats with bots, automatically play three rounds and finish', async (
   try {
     const page = await context.newPage();
     await page.goto('/lobby/new');
+    await page.getByRole('checkbox', { name: /Я тоже играю/ }).uncheck();
     await page.getByText('Дополнительные настройки', { exact: true }).click();
     await page.getByRole('checkbox', { name: /Начинать следующий раунд автоматически/ }).check();
     await page.getByRole('button', { name: 'Создать игру', exact: true }).click();

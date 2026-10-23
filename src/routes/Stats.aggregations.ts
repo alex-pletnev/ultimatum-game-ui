@@ -150,3 +150,41 @@ export function computeTimeline(rows: StatsRow[]): TimelinePoint[] {
       };
     });
 }
+
+export function computeEconomy(rows: StatsRow[], roundSum: number) {
+  const rounds = new Map<
+    number,
+    { round: number; earned: number; lost: number; pending: number }
+  >();
+  for (const row of rows) {
+    const point = rounds.get(row.roundNumber) ?? {
+      round: row.roundNumber,
+      earned: 0,
+      lost: 0,
+      pending: 0,
+    };
+    point[row.accepted === true ? 'earned' : row.accepted === false ? 'lost' : 'pending'] +=
+      roundSum;
+    rounds.set(row.roundNumber, point);
+  }
+  return [...rounds.values()].sort((a, b) => a.round - b.round);
+}
+
+export function computeCumulativeScores(
+  rows: StatsRow[],
+  roundSum: number,
+): Record<string, number>[] {
+  const totals: Record<string, number> = Object.fromEntries(
+    computeLeaderboard(rows, roundSum).map((p) => [p.userId, 0]),
+  );
+  const rounds = [...new Set(rows.map((r) => r.roundNumber))].sort((a, b) => a - b);
+  return rounds.map((round) => {
+    for (const player of computeLeaderboard(
+      rows.filter((r) => r.roundNumber === round),
+      roundSum,
+    )) {
+      totals[player.userId] = (totals[player.userId] ?? 0) + player.totalScore;
+    }
+    return { round, ...totals };
+  });
+}

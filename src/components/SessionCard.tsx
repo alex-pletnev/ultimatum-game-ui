@@ -15,7 +15,11 @@ export function SessionCard({
     <Parchment className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="badge">
-          {session.config.sessionType === 'TEAM_BATTLE' ? 'Команды' : 'Каждый за себя'}
+          {session.config.sessionType === 'DICTATOR'
+            ? 'Диктатор'
+            : session.config.sessionType === 'TEAM_BATTLE'
+              ? 'Команды'
+              : 'Каждый за себя'}
         </span>
         {session.admin.id === currentUser?.id && <span className="badge">Ваша игра</span>}
       </div>

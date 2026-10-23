@@ -17,12 +17,12 @@ export const npcKeys = {
 };
 
 /** GET /npc — только для ADMIN'а; без токена запрос не отправляем. */
-export function useNpcList() {
+export function useNpcList(enabled = true) {
   const token = useAccessToken();
   return useQuery({
     queryKey: npcKeys.list,
     queryFn: () => apiFetch<NpcProfileResponse[]>('/npc'),
-    enabled: token !== null,
+    enabled: enabled && token !== null,
     staleTime: 15_000,
   });
 }
@@ -69,10 +69,10 @@ export function useBulkAttachNpcs(sessionId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: BulkNpcsRequest) =>
-      apiFetch<BulkNpcsResponse>(
-        `/session/${encodeURIComponent(sessionId)}/npcs`,
-        { method: 'POST', body },
-      ),
+      apiFetch<BulkNpcsResponse>(`/session/${encodeURIComponent(sessionId)}/npcs`, {
+        method: 'POST',
+        body,
+      }),
     onSuccess: (data) => {
       qc.setQueryData(sessionKeys.details(data.session.id), data.session);
       void qc.invalidateQueries({ queryKey: npcKeys.list });

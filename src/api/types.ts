@@ -13,7 +13,7 @@ export type AssignableRole = Exclude<Role, 'NPC'>;
 
 export type SessionState = 'CREATED' | 'RUNNING' | 'FINISHED' | 'ABORTED';
 
-export type SessionType = 'FREE_FOR_ALL' | 'TEAM_BATTLE';
+export type SessionType = 'FREE_FOR_ALL' | 'TEAM_BATTLE' | 'DICTATOR';
 
 export type RoundPhase =
   | 'CREATED'
@@ -69,6 +69,7 @@ export type SessionConfigRequest = {
 export type CreateSessionRequest = {
   displayName: string;
   openToConnect?: boolean;
+  hostPlays?: boolean;
   config: SessionConfigRequest;
 };
 

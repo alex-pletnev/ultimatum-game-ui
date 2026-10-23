@@ -49,12 +49,18 @@ export function AppShell({ children }: { children: ReactNode }) {
             <NavLink to="/lobby" className="nav-link">
               Игры
             </NavLink>
-            <NavLink to="/rules" className="nav-link">
-              Правила
+            <NavLink to="/guide" className="nav-link">
+              Руководство
             </NavLink>
-            <NavLink to="/practice" className="nav-link">
-              Попробовать
-            </NavLink>
+            {token ? (
+              <NavLink to="/history" className="nav-link">
+                Мои игры
+              </NavLink>
+            ) : (
+              <NavLink to="/practice" className="nav-link">
+                Попробовать
+              </NavLink>
+            )}
           </nav>
           {token ? (
             <div className="flex max-w-full flex-wrap items-center gap-2">

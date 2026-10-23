@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  computeEconomy,
+  computeCumulativeScores,
   computeHistogram,
   computeLeaderboard,
   computeSummary,
@@ -112,4 +114,26 @@ it('does not invent a nameless player before offers have been assigned', () => {
       (p) => p.userId,
     ),
   ).toEqual(['p1']);
+});
+
+describe('round economy and cumulative scores', () => {
+  const rows = [
+    row({ roundNumber: 2, amount: 20 }),
+    row({ accepted: false }),
+    row({ accepted: null }),
+    row({ amount: 30 }),
+  ];
+  it('separates lost, earned and undecided coins, sorted by round', () => {
+    expect(computeEconomy(rows, 100)).toEqual([
+      { round: 1, earned: 100, lost: 100, pending: 100 },
+      { round: 2, earned: 100, lost: 0, pending: 0 },
+    ]);
+  });
+  it('carries each player score forward and ignores rejected or pending deals', () => {
+    expect(computeCumulativeScores(rows, 100)).toEqual([
+      { round: 1, p1: 70, p2: 30 },
+      { round: 2, p1: 150, p2: 50 },
+    ]);
+    expect(computeCumulativeScores([], 100)).toEqual([]);
+  });
 });

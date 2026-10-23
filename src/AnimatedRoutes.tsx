@@ -7,6 +7,9 @@ import { Lobby } from './routes/Lobby';
 import { Register } from './routes/Register';
 import { Session } from './routes/Session';
 import { Practice } from './routes/Practice';
+import { Play } from './routes/Play';
+import { Guide } from './routes/Guide';
+import { History } from './routes/History';
 import { Rules } from './routes/Rules';
 
 const Stats = lazy(() => import('./routes/Stats').then((m) => ({ default: m.Stats })));
@@ -29,6 +32,9 @@ export function AnimatedRoutes() {
           <Route path="/" element={<App />} />
           <Route path="/register" element={<Register />} />
           <Route path="/practice" element={<Practice />} />
+          <Route path="/play" element={<Play />} />
+          <Route path="/guide" element={<Guide />} />
+          <Route path="/history" element={<History />} />
           <Route path="/rules" element={<Rules />} />
           <Route path="/lobby" element={<Lobby />} />
           <Route path="/lobby/new" element={<CreateSession />} />

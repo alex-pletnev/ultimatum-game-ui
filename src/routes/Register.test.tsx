@@ -75,7 +75,7 @@ describe('Register', () => {
     expect(authStorage.getRefresh()).toBe('ref-1');
   });
 
-  it('sends role: ADMIN when Ведущий toggled', async () => {
+  it('registers a player and opens setup when hosting is selected', async () => {
     const fetchMock = vi.mocked(fetch);
     fetchMock.mockResolvedValueOnce(
       jsonResponse(200, { accessToken: 'a', refreshToken: 'r', expiresIn: 900 }),
@@ -90,7 +90,7 @@ describe('Register', () => {
 
     await screen.findByText('create');
     const init = fetchMock.mock.calls[0]![1]!;
-    expect(init.body).toBe(JSON.stringify({ nickname: 'GameMaster', role: 'ADMIN' }));
+    expect(init.body).toBe(JSON.stringify({ nickname: 'GameMaster', role: 'PLAYER' }));
   });
 
   it('preserves a session invitation after registration', async () => {

@@ -35,10 +35,10 @@ test('two players complete two rounds, restore scores after refresh and view res
       await page.getByLabel('Сумма предложения').fill(String(amount));
       await page.getByRole('button', { name: `Предложить ${amount} монет`, exact: true }).click();
     }
-    await offer(first, 40);
-    await offer(second, 60);
-    await first.getByRole('button', { name: /Принять · получить/ }).click();
-    await second.getByRole('button', { name: /Принять · получить/ }).click();
+    await Promise.all([offer(first, 40), offer(second, 60)]);
+    await Promise.all(
+      [first, second].map((p) => p.getByRole('button', { name: /Принять · получить/ }).click()),
+    );
     const scores = admin.getByRole('list', { name: 'Счёт игроков' });
     await expect(scores.locator('li', { hasText: nick1 })).toContainText('120');
     await admin.reload();

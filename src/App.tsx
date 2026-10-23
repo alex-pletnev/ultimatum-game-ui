@@ -26,6 +26,9 @@ export function App() {
             Играть с друзьями
           </Link>
         </div>
+        <Link className="text-link" to="/play">
+          Или сыграть полноценную партию с ботом →
+        </Link>
         <p className="text-sm text-ink-900/65">
           Учебный раунд — около минуты. Для игры с друзьями понадобится только имя.
         </p>
