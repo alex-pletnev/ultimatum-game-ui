@@ -19,7 +19,7 @@ export function History() {
   return (
     <main className="page-container py-10">
       <h1 className="text-3xl font-semibold">Мои игры</h1>
-      <p className="mb-7 mt-3 text-ink-900/70">
+      <p className="mb-7 mt-3 text-muted">
         Партии, которые вы создали, играли или наблюдали в этом профиле. Сначала — новые.
       </p>
       {games.isLoading && <p role="status">Загружаем историю…</p>}

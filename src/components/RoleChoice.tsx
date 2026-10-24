@@ -39,7 +39,7 @@ export function RoleChoice({
           />
           <span>
             <span className="block font-semibold">{choice.title}</span>
-            <span className="mt-1 block text-sm text-ink-900/70">{choice.description}</span>
+            <span className="mt-1 block text-sm text-muted">{choice.description}</span>
           </span>
         </label>
       ))}

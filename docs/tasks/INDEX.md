@@ -11,6 +11,7 @@
 | T-014 | Lobby после POST /session — Playwright race | pending | low | 2026-07-16 | [T-014-lobby-refetch-race-debug.md](T-014-lobby-refetch-race-debug.md) |
 | T-023 | Prod deploy на GitHub Pages | in_progress | high | 2026-07-17 | [T-023-gh-pages-prod-deploy.md](T-023-gh-pages-prod-deploy.md) |
 
+
 ## Закрытые задачи
 
 | ID | Название | Статус | Закрыто | Файл |
@@ -39,6 +40,8 @@
 | T-012 | ADMIN стартует партию + отображение фазы раунда | done | 2026-07-15 | [T-012-admin-start-round.md](T-012-admin-start-round.md) |
 | T-025 | Простой путь от первого визита до завершённой игры | done | 2026-10-23 | [T-025](T-025-simple-game-experience.md) |
 | T-026 | Игра как продукт — соло, сценарии, руководство и аналитика | done | 2026-10-23 | [T-026](T-026-product-expansion.md) |
+
+| T-027 | QR-приглашение, случайные боты и оформление настольной игры | done | 2026-10-24 | [T-027](T-027-tabletop-lobby.md) |
 
 ## Закрытые consolidation-циклы
 

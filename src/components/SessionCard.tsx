@@ -25,21 +25,21 @@ export function SessionCard({
       </div>
       <div>
         <h2 className="text-2xl font-semibold">{session.displayName}</h2>
-        <p className="mt-2 text-sm text-ink-900/70">ведущий · {session.admin.nickname}</p>
+        <p className="mt-2 text-sm text-muted">ведущий · {session.admin.nickname}</p>
       </div>
       <dl className="grid grid-cols-3 gap-3">
         <div>
-          <dt className="text-sm text-ink-900/65">Игроки</dt>
+          <dt className="text-sm text-muted">Игроки</dt>
           <dd className="font-semibold">
             {details.data ? `${details.data.members.length}/${session.config.numPlayers}` : '…'}
           </dd>
         </div>
         <div>
-          <dt className="text-sm text-ink-900/65">Раунды</dt>
+          <dt className="text-sm text-muted">Раунды</dt>
           <dd className="font-semibold">{session.config.numRounds}</dd>
         </div>
         <div>
-          <dt className="text-sm text-ink-900/65">Монеты</dt>
+          <dt className="text-sm text-muted">Монеты</dt>
           <dd className="font-semibold">{session.config.roundSum}</dd>
         </div>
       </dl>

@@ -4,7 +4,9 @@ import { MemoryRouter } from 'react-router';
 import { AddNpcPanel } from './AddNpcPanel';
 import type { SessionWithTeamsAndMembersResponse } from '../api/types';
 const bulk = vi.hoisted(() => vi.fn());
+const random = vi.hoisted(() => vi.fn());
 vi.mock('../api/npc-queries', () => ({
+  useFillRandomNpcs: () => ({ mutate: random }),
   useNpcList: () => ({ data: [] }),
   useJoinNpc: () => ({}),
   useBulkAttachNpcs: () => ({ mutate: bulk }),
@@ -55,4 +57,16 @@ it('does not fill an odd two-team game into an unplayable balance', async () => 
   await user.click(screen.getByText('Не хватает игроков? Добавить ботов'));
   await user.click(screen.getByRole('button', { name: /Заполнить свободные места ботами/ }));
   expect(bulk).toHaveBeenLastCalledWith(expect.objectContaining({ count: 4 }));
+});
+
+it('fills random bots without opening advanced controls', async () => {
+  render(
+    <MemoryRouter>
+      <AddNpcPanel session={game} />
+    </MemoryRouter>,
+  );
+  await userEvent
+    .setup()
+    .click(screen.getByRole('button', { name: 'Заполнить случайными ботами' }));
+  expect(random).toHaveBeenCalledOnce();
 });

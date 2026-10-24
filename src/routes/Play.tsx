@@ -21,7 +21,7 @@ export function Play() {
       <Parchment>
         <span className="eyebrow">Играйте в своём темпе</span>
         <h1 className="mt-2 text-3xl font-semibold">Вы против бота</h1>
-        <p className="my-5 text-ink-900/70">
+        <p className="my-5 text-muted">
           Настоящая партия со счётом и статистикой. Вы делаете ход, бот отвечает сам. Между раундами
           можно посмотреть результат и продолжить, когда будете готовы.
         </p>

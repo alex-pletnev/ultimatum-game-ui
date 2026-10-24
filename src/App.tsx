@@ -14,7 +14,7 @@ export function App() {
         <p className="max-w-lg text-2xl leading-snug sm:text-3xl">
           Договоритесь о цене справедливости.
         </p>
-        <p className="max-w-lg text-lg text-ink-900/75">
+        <p className="max-w-lg text-lg text-muted">
           У вас 100 монет на двоих. Один предлагает раздел, другой решает: принять или оставить
           обоих ни с чем.
         </p>
@@ -29,24 +29,24 @@ export function App() {
         <Link className="text-link" to="/play">
           Или сыграть полноценную партию с ботом →
         </Link>
-        <p className="text-sm text-ink-900/65">
+        <p className="text-sm text-muted">
           Учебный раунд — около минуты. Для игры с друзьями понадобится только имя.
         </p>
       </section>
-      <Parchment className="flex flex-col gap-6">
+      <Parchment className="hero-game flex flex-col gap-6">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">Одна сделка. Два решения.</h2>
           <span className="badge">Пример</span>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-card bg-parchment-200 p-6">
+        <div className="split-preview">
+          <div>
             <p className="text-sm">Вы оставляете</p>
-            <p className="mt-2 text-5xl font-semibold">60</p>
+            <strong>60</strong>
             <p className="text-sm">монет</p>
           </div>
-          <div className="rounded-card bg-ember-500/15 p-6">
+          <div>
             <p className="text-sm">Предлагаете другому</p>
-            <p className="mt-2 text-5xl font-semibold">40</p>
+            <strong>40</strong>
             <p className="text-sm">монет</p>
           </div>
         </div>

@@ -41,7 +41,7 @@ function ParamNumber({
         step={step}
         className="w-full rounded-inset border border-brass-500/40 bg-parchment-200/50 px-3 py-2 font-body text-lg text-ink-950 outline-none focus:border-ember-600"
       />
-      {hint !== undefined && <span className="font-body text-xs text-ink-900/70">{hint}</span>}
+      {hint !== undefined && <span className="font-body text-xs text-muted">{hint}</span>}
     </label>
   );
 }
@@ -220,11 +220,9 @@ function NpcCard({
           </span>
         </div>
       </div>
-      <p className="text-sm text-ink-900/70">
-        {STRATEGIES.find((s) => s.value === npc.strategy)?.hint}
-      </p>
+      <p className="text-sm text-muted">{STRATEGIES.find((s) => s.value === npc.strategy)?.hint}</p>
       <div className="flex items-center justify-between">
-        <span className="font-body text-xs text-ink-900/70">
+        <span className="font-body text-xs text-muted">
           {new Date(npc.createdAt).toLocaleString('ru-RU')}
         </span>
         <button
@@ -319,7 +317,7 @@ export function Npc() {
           <p className="font-mono text-sm text-brass-600 ">Кабинет ведущего</p>
           <h1 className="mt-2 font-display text-2xl text-ink-950 sm:text-3xl">Боты</h1>
         </div>
-        <Link to="/lobby" className="font-mono text-sm text-ink-900/70 hover:text-ember-400">
+        <Link to="/lobby" className="font-mono text-sm text-muted hover:text-ember-400">
           ← Все игры
         </Link>
       </header>
@@ -369,7 +367,7 @@ export function Npc() {
                       <div className="flex items-baseline justify-between gap-2">
                         <span className="font-display text-sm text-ink-950">{s.title}</span>
                       </div>
-                      <p className="mt-0.5 font-body text-xs text-ink-900/70">{s.hint}</p>
+                      <p className="mt-0.5 font-body text-xs text-muted">{s.hint}</p>
                     </label>
                   );
                 })}
@@ -395,7 +393,7 @@ export function Npc() {
                     placeholder="напр. 42"
                     className="rounded-inset border border-brass-500/40 bg-parchment-200/50 px-3 py-2 font-body text-lg text-ink-950 outline-none focus:border-ember-600"
                   />
-                  <span className="font-body text-xs text-ink-900/70">
+                  <span className="font-body text-xs text-muted">
                     Одинаковое число позволяет повторить случайное поведение бота. Обычно можно
                     оставить пустым.
                   </span>
@@ -428,12 +426,12 @@ export function Npc() {
               <span className="font-mono text-sm text-brass-600">Готовые</span>
               <span className="h-px flex-1 bg-brass-500/40" />
             </div>
-            {list.isLoading && <p className="font-body text-ink-900/70">Загружаем ботов…</p>}
+            {list.isLoading && <p className="font-body text-muted">Загружаем ботов…</p>}
             {list.isError && (
               <p className="font-body text-blood-600">Не удалось получить список.</p>
             )}
             {!list.isLoading && !list.isError && (list.data ?? []).length === 0 && (
-              <p className="font-body text-ink-900/70">
+              <p className="font-body text-muted">
                 Отряд пуст. Выкуй первого — и он окажется здесь.
               </p>
             )}

@@ -120,7 +120,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div id="content" ref={content} tabIndex={-1} className="outline-none">
         {children}
       </div>
-      <footer className="page-container flex flex-wrap justify-between gap-3 py-8 text-sm text-ink-900/60">
+      <footer className="page-container flex flex-wrap justify-between gap-3 py-8 text-sm text-muted">
         <span>Ultimatum · у каждого своя справедливость</span>
         <Link className="text-link" to="/rules">
           Как играть

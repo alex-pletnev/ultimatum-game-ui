@@ -49,7 +49,7 @@ function SummaryCard({ label, value, hint }: { label: string; value: string; hin
     <div className="flex flex-col items-center gap-1 rounded-panel border border-brass-500/25 bg-parchment-50/70 px-4 py-3">
       <span className="font-mono text-sm text-brass-600">{label}</span>
       <span className="font-display text-2xl text-ink-950">{value}</span>
-      {hint !== undefined && <span className="font-body text-sm text-ink-900/70">{hint}</span>}
+      {hint !== undefined && <span className="font-body text-sm text-muted">{hint}</span>}
     </div>
   );
 }
@@ -385,14 +385,12 @@ function RawTable({ rows }: { rows: StatsRow[] }) {
                     <span className="font-mono text-sm text-brass-600">—</span>
                   )}
                 </td>
-                <td className="px-3 py-2 text-right font-mono text-sm text-ink-900/70">
-                  {r.timestamp}
-                </td>
+                <td className="px-3 py-2 text-right font-mono text-sm text-muted">{r.timestamp}</td>
               </tr>
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-3 py-4 text-center font-body text-ink-900/70">
+                <td colSpan={6} className="px-3 py-4 text-center font-body text-muted">
                   Ничего не найдено.
                 </td>
               </tr>
@@ -579,12 +577,12 @@ export function Stats() {
           {id !== undefined && (
             <Link
               to={`/session/${id}`}
-              className="font-mono text-sm text-ink-900/70 hover:text-ember-400"
+              className="font-mono text-sm text-muted hover:text-ember-400"
             >
               ← К игре
             </Link>
           )}
-          <Link to="/lobby" className="font-mono text-sm text-ink-900/70 hover:text-ember-400">
+          <Link to="/lobby" className="font-mono text-sm text-muted hover:text-ember-400">
             ← Все игры
           </Link>
         </div>
@@ -612,7 +610,7 @@ export function Stats() {
         <Parchment className="text-center">
           <div className="flex flex-col items-center gap-3">
             <WaxSeal size={48} monogram="?" />
-            <p className="font-body text-ink-900/70">
+            <p className="font-body text-muted">
               Пока нет предложений. Результаты появятся после начала игры.
             </p>
           </div>
@@ -627,7 +625,7 @@ export function Stats() {
                 ? `Лучший результат: ${leaderboard[0]!.totalScore} монет`
                 : 'Итоги игры'}
             </h2>
-            <p className="mb-5 text-ink-900/70">
+            <p className="mb-5 text-muted">
               {leaderboard
                 .filter((p) => p.totalScore === leaderboard[0]?.totalScore)
                 .map((p) => p.nickname)

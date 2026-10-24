@@ -4,7 +4,9 @@
 @layer base {
   body {
     margin: 0;
-    background: var(--color-parchment-50);
+    background-color: var(--color-parchment-50);
+    background-image: radial-gradient(#92723c12 0.7px, transparent 0.7px);
+    background-size: 7px 7px;
     color: var(--color-ink-950);
     font-family: var(--font-body);
     font-size: 16px;
@@ -14,6 +16,7 @@
   h1,
   h2,
   h3 {
+    font-family: var(--font-display);
     line-height: 1.2;
     overflow-wrap: anywhere;
     text-wrap: balance;
@@ -81,6 +84,7 @@
   }
   .app-header {
     background: var(--color-parchment-100);
+    border-top: 5px solid var(--color-blood-600);
     border-bottom: 1px solid var(--color-parchment-300);
   }
   .brand-mark {
@@ -88,9 +92,12 @@
     place-items: center;
     width: 36px;
     height: 36px;
-    border-radius: 10px;
-    color: white;
-    background: var(--color-night-700);
+    border-radius: 50%;
+    border: 3px double var(--color-brass-600);
+    color: var(--color-ink-950);
+    background: var(--color-ember-400);
+    box-shadow: 0 3px 0 var(--color-brass-600);
+    font-family: var(--font-display);
   }
   .nav-link {
     display: inline-flex;
@@ -105,6 +112,7 @@
   .nav-link:hover,
   .nav-link[aria-current='page'] {
     background: var(--color-parchment-200);
+    box-shadow: inset 0 -2px var(--color-blood-500);
   }
   .button {
     display: inline-flex;
@@ -114,8 +122,9 @@
     min-height: 48px;
     padding: 12px 20px;
     border-radius: var(--radius-panel);
-    border: 1px solid transparent;
-    background: var(--color-night-700);
+    border: 1px solid #58232a;
+    box-shadow: 0 3px 0 #58232a;
+    background: var(--color-blood-600);
     color: white;
     font-weight: 600;
     line-height: 1.4;
@@ -123,11 +132,12 @@
     transition: background-color 120ms;
   }
   .button:hover:not(:disabled) {
-    background: var(--color-night-500);
+    background: var(--color-blood-500);
   }
   .button-secondary {
     background: var(--color-parchment-100);
     border-color: var(--color-parchment-400);
+    box-shadow: 0 3px 0 var(--color-parchment-300);
     color: var(--color-ink-950);
   }
   .button-secondary:hover:not(:disabled) {
@@ -139,6 +149,8 @@
     text-underline-offset: 4px;
   }
   .eyebrow {
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     color: var(--color-brass-600);
     font-size: 13px;
     font-weight: 600;
@@ -147,7 +159,8 @@
     display: inline-flex;
     align-items: center;
     padding: 4px 10px;
-    border-radius: 999px;
+    border-radius: 5px;
+    border: 1px solid var(--color-parchment-300);
     background: var(--color-parchment-200);
     color: var(--color-ink-900);
     font-size: 12px;
@@ -164,15 +177,19 @@
     border: 1px solid var(--color-parchment-400);
     border-radius: var(--radius-panel);
     cursor: pointer;
+    background: var(--color-parchment-100);
+    box-shadow: 0 3px 0 var(--color-parchment-300);
   }
   .choice-card input {
     margin-top: 3px;
   }
   .choice-selected {
     border-color: var(--color-verdigris-600);
-    background: var(--color-parchment-200);
+    background: #e3ecdf;
+    box-shadow: 0 3px 0 var(--color-verdigris-600);
   }
   .notice {
+    border: 1px solid var(--color-parchment-300);
     border-radius: var(--radius-panel);
     background: var(--color-parchment-200);
     padding: 16px;
@@ -189,16 +206,103 @@
     gap: 12px;
   }
   .split-preview > div {
-    padding: 20px;
+    border: 1px solid var(--color-parchment-300);
+    padding: clamp(12px, 3vw, 20px);
     border-radius: var(--radius-panel);
     background: var(--color-parchment-200);
     text-align: center;
   }
   .split-preview strong {
-    display: block;
-    margin-top: 8px;
+    display: grid;
+    place-items: center;
+    width: fit-content;
+    min-width: 76px;
+    min-height: 76px;
+    margin: 12px auto 0;
+    padding: 8px;
+    border-radius: 50%;
+    border: 4px double var(--color-brass-600);
+    box-shadow: 0 3px 0 var(--color-brass-600);
+    background: var(--color-ember-300);
+    font-family: var(--font-display);
     font-size: 40px;
     line-height: 1.2;
+  }
+  .split-preview[data-large='true'] strong {
+    font-size: 20px;
+  }
+  .game-card {
+    border-top: 3px solid var(--color-brass-400);
+  }
+  .hero-game {
+    position: relative;
+    isolation: isolate;
+    border-top-color: var(--color-blood-500);
+  }
+  .hero-game::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: 7px -5px -7px;
+    border: 1px solid var(--color-parchment-400);
+    border-radius: var(--radius-card);
+    background: var(--color-parchment-200);
+    transform: rotate(-2deg);
+  }
+  .hero-game::after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    border-radius: var(--radius-card);
+    background: var(--color-parchment-100);
+  }
+  .invitation-card {
+    display: grid;
+    gap: 24px;
+    align-items: center;
+    border: 1px dashed var(--color-brass-500);
+    background: var(--color-parchment-50);
+    border-radius: var(--radius-panel);
+    padding: 20px;
+  }
+  .invitation-qr {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .invitation-qr svg {
+    width: min(208px, 100%);
+    height: auto;
+    border: 1px solid var(--color-parchment-300);
+    box-shadow: 3px 3px 0 var(--color-parchment-300);
+  }
+  .qr-dialog {
+    margin: auto;
+    width: min(800px, calc(100vw - 24px));
+    max-height: calc(100dvh - 24px);
+    overflow: auto;
+    padding: clamp(16px, 3vw, 32px);
+    color: var(--color-ink-950);
+    background: var(--color-parchment-100);
+    border: 2px solid var(--color-brass-400);
+    border-radius: var(--radius-card);
+    text-align: center;
+  }
+  .qr-dialog::backdrop {
+    background: #261d16de;
+  }
+  .qr-dialog > svg {
+    display: block;
+    width: min(100%, 64dvh);
+    height: auto;
+    margin: 20px auto;
+    background: white;
+  }
+  .dice-mark {
+    font-size: 26px;
+    line-height: 1;
   }
   .skip-link {
     position: absolute;
@@ -213,6 +317,9 @@
   }
 }
 @media (min-width: 640px) {
+  .invitation-card {
+    grid-template-columns: 208px minmax(0, 1fr);
+  }
   .page-container {
     padding-inline: 32px;
   }

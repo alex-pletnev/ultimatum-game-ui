@@ -54,7 +54,7 @@ export function Register() {
           <div>
             <span className="eyebrow">{next ? 'Приглашение в игру' : 'Без пароля и почты'}</span>
             <h1 className="mt-2 text-3xl font-semibold">Как вас зовут?</h1>
-            <p className="mt-3 text-ink-900/70">
+            <p className="mt-3 text-muted">
               Другие игроки увидят это имя.{' '}
               {next ? 'После входа вы вернётесь к приглашению.' : 'Выберите, что хотите сделать.'}
             </p>
@@ -84,7 +84,7 @@ export function Register() {
           <button type="submit" disabled={register.isPending} className="button">
             {register.isPending ? 'Входим…' : 'Продолжить'}
           </button>
-          <p className="text-sm text-ink-900/65">
+          <p className="text-sm text-muted">
             Это временный профиль в этом браузере. После выхода вернуться под тем же именем не
             получится.
           </p>

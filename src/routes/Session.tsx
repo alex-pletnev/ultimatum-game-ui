@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Link, Navigate, useHref, useParams, useNavigate } from 'react-router';
+import { Link, Navigate, useParams, useNavigate } from 'react-router';
 import { AddNpcPanel } from '../components/AddNpcPanel';
 import { Parchment } from '../components/Parchment';
+import { SessionInvite } from '../components/SessionInvite';
 import { SessionJoin } from '../components/SessionJoin';
 import { rememberGame } from '../api/recent-game';
 import { useAccessToken } from '../api/auth-storage';
@@ -64,14 +65,14 @@ export function OfferPhasePanel({
     <div className="flex w-full flex-col gap-5">
       <div>
         <h3 className="text-2xl font-semibold">Сколько предложите другому игроку?</h3>
-        <p className="mt-2 text-ink-900/70">
+        <p className="mt-2 text-muted">
           Разделите {roundSum} монет.{' '}
           {dictator
             ? 'В режиме «Диктатор» другой игрок автоматически получит предложенную долю — отказаться нельзя.'
             : 'Если предложение отклонят, оба получите 0 за эту сделку.'}
         </p>
       </div>
-      <div className="split-preview">
+      <div className="split-preview" data-large={roundSum >= 10000}>
         <div>
           Вам остаётся<strong>{roundSum - amount}</strong>
         </div>
@@ -110,7 +111,7 @@ export function OfferPhasePanel({
       >
         {command.pending ? 'Отправляем…' : `Предложить ${amount} монет`}
       </button>
-      <p className="text-sm text-ink-900/65">После отправки предложение нельзя изменить.</p>
+      <p className="text-sm text-muted">После отправки предложение нельзя изменить.</p>
       <CommandFeedback error={command.error} />
     </div>
   );
@@ -140,7 +141,7 @@ export function DecisionPhasePanel({
   return (
     <div className="flex w-full flex-col gap-5">
       <h3 className="text-2xl font-semibold">{offer.proposer.nickname} предлагает раздел</h3>
-      <div className="split-preview">
+      <div className="split-preview" data-large={roundSum >= 10000}>
         <div>
           Вы получите<strong data-testid="assigned-offer-amount">{offer.offerValue}</strong>
         </div>
@@ -254,7 +255,7 @@ export function RoundResultPanel({
         <p role="status">Считаем очки…</p>
       ) : (
         <>
-          <p className="text-sm text-ink-900/70">Сыграно раундов: {score.roundsCompleted}</p>
+          <p className="text-sm text-muted">Сыграно раундов: {score.roundsCompleted}</p>
           <ol aria-label="Счёт игроков" className="divide-y divide-brass-500/20">
             {[...score.players]
               .sort((a, b) => b.score - a.score)
@@ -291,54 +292,11 @@ export function RoundResultPanel({
         </button>
       )}
       {!isAdmin && isSessionRunning && (
-        <p className="text-sm text-ink-900/70">
+        <p className="text-sm text-muted">
           Ведущий начнёт следующий раунд. Можно пока обсудить результаты.
         </p>
       )}
       <CommandFeedback error={command.error} />
-    </div>
-  );
-}
-
-function Invite({ id }: { id: string }) {
-  const href = useHref(`/session/${id}`);
-  const url = new URL(href, window.location.href).href;
-  const [copied, setCopied] = useState(false);
-  const [copyError, setCopyError] = useState(false);
-  return (
-    <div className="notice flex flex-col gap-3">
-      <label htmlFor="invitation" className="font-semibold">
-        Пригласите друзей
-      </label>
-      <p className="text-sm">Отправьте ссылку. Друзья введут имя и присоединятся к этой игре.</p>
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <input
-          id="invitation"
-          readOnly
-          value={url}
-          onFocus={(e) => e.target.select()}
-          className="min-w-0 flex-1 rounded-inset border border-brass-500/40 bg-white px-3 text-sm"
-        />
-        <button
-          className="button button-secondary"
-          onClick={async () => {
-            try {
-              await navigator.clipboard.writeText(url);
-              setCopied(true);
-              setCopyError(false);
-            } catch {
-              setCopyError(true);
-            }
-          }}
-        >
-          {copied ? 'Скопировано' : 'Копировать ссылку'}
-        </button>
-      </div>
-      {copyError && (
-        <p role="status" className="text-sm">
-          Не удалось скопировать автоматически. Выделите ссылку выше и скопируйте её.
-        </p>
-      )}
     </div>
   );
 }
@@ -467,10 +425,10 @@ export function Session() {
                     ? 'Можно начать, когда соберутся хотя бы двое.'
                     : `Ведущий ${session.admin.nickname} начнёт раунд. Страница обновится автоматически.`}
                 </p>
-                <Invite id={session.id} />
+                <SessionInvite id={session.id} name={session.displayName} />
                 {isAdmin && (
                   <>
-                    {readyError && <p className="text-sm text-ink-900/70">{readyError}</p>}
+                    {readyError && <p className="text-sm text-muted">{readyError}</p>}
                     <button
                       className="button"
                       disabled={!connected || Boolean(readyError) || start.pending}

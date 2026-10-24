@@ -78,7 +78,7 @@ export function CreateSession() {
           <div>
             <span className="eyebrow">Вы — ведущий</span>
             <h1 className="mt-2 text-3xl font-semibold">Создать игру</h1>
-            <p className="mt-3 text-ink-900/70">
+            <p className="mt-3 text-muted">
               Настройки уже готовы. Создайте игру, затем отправьте друзьям ссылку. Вы управляете
               раундами и можете играть вместе со всеми.
             </p>

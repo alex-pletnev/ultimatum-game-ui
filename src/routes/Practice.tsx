@@ -15,7 +15,7 @@ export function Practice() {
       <div className="mb-6">
         <span className="eyebrow">Учебная игра · без регистрации</span>
         <h1 className="mt-2 text-3xl font-semibold">Попробуйте одну сделку</h1>
-        <p className="mt-3 text-ink-900/70">
+        <p className="mt-3 text-muted">
           Это пример с учебным ботом. Результат никуда не сохраняется.
         </p>
       </div>
@@ -88,9 +88,7 @@ export function Practice() {
                 Боту<strong>60</strong>
               </div>
             </div>
-            <p className="text-sm text-ink-900/70">
-              Примете — получите 40. Отклоните — оба получите 0.
-            </p>
+            <p className="text-sm text-muted">Примете — получите 40. Отклоните — оба получите 0.</p>
             <div className="grid gap-3 sm:grid-cols-2">
               <button
                 className="button"

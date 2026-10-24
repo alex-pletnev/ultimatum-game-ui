@@ -26,9 +26,7 @@ export function Lobby() {
             {user ? `Здравствуйте, ${user.nickname}` : 'Вместе интереснее'}
           </span>
           <h1 className="mt-2 text-3xl font-semibold">Игры</h1>
-          <p className="mt-3 text-ink-900/70">
-            Выберите игру ниже или откройте ссылку от ведущего.
-          </p>
+          <p className="mt-3 text-muted">Выберите игру ниже или откройте ссылку от ведущего.</p>
         </div>
         {canCreate && (
           <Link className="button" to="/lobby/new">

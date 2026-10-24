@@ -64,7 +64,7 @@ export function NumberStepper({ label, value, onChange, min, max, step = 1, hint
         </button>
       </div>
       {hint && (
-        <p id={`${id}-hint`} className="text-sm text-ink-900/70">
+        <p id={`${id}-hint`} className="text-sm text-muted">
           {hint}
         </p>
       )}

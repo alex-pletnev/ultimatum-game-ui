@@ -79,3 +79,18 @@ export function useBulkAttachNpcs(sessionId: string) {
     },
   });
 }
+
+export function useFillRandomNpcs(sessionId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      apiFetch<SessionWithTeamsAndMembersResponse>(
+        `/session/${encodeURIComponent(sessionId)}/npcs/random`,
+        { method: 'POST' },
+      ),
+    onSuccess: (data) => {
+      qc.setQueryData(sessionKeys.details(data.id), data);
+      void qc.invalidateQueries({ queryKey: npcKeys.list });
+    },
+  });
+}
