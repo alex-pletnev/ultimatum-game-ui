@@ -115,3 +115,5 @@ tags: [gameplay, auth, analytics]
   Возврат с другого устройства требует сохранённого секретного кода. UUID/ник не является паролем.
 
 Скриншоты опубликованной версии: [desktop](../evidence/T-028/desktop.png), [mobile](../evidence/T-028/mobile.png).
+
+Релизные code commits: backend `641e59c`, frontend `581a377`, оба в `origin/main`. Checkout: `/home/dev/ug/ultimatum-game` и `/home/dev/ug/ultimatum-game-ui`, владелец origin `alex-pletnev`. Последующая фиксация handoff меняет только документацию.
