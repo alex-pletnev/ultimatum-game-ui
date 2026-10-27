@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   computeEconomy,
+  computeTeams,
   computeCumulativeScores,
   computeHistogram,
   computeLeaderboard,
@@ -136,4 +137,56 @@ describe('round economy and cumulative scores', () => {
     ]);
     expect(computeCumulativeScores([], 100)).toEqual([]);
   });
+});
+
+it('aggregates proposals and received decisions separately for each team', () => {
+  const rows = [
+    row({
+      amount: 30,
+      proposerTeamId: 'a',
+      proposerTeamName: 'A',
+      responderTeamId: 'b',
+      responderTeamName: 'B',
+      accepted: true,
+    }),
+    row({
+      amount: 60,
+      proposerTeamId: 'b',
+      proposerTeamName: 'B',
+      responderTeamId: 'a',
+      responderTeamName: 'A',
+      accepted: false,
+    }),
+    row({
+      amount: 90,
+      proposerTeamId: 'a',
+      proposerTeamName: 'A',
+      responderTeamId: 'b',
+      responderTeamName: 'B',
+      accepted: null,
+    }),
+  ];
+  expect(computeTeams(rows, 100)).toEqual([
+    {
+      id: 'a',
+      name: 'A',
+      score: 70,
+      offers: 2,
+      avgOffer: 60,
+      accepted: 0,
+      rejected: 1,
+      pending: 0,
+    },
+    {
+      id: 'b',
+      name: 'B',
+      score: 30,
+      offers: 1,
+      avgOffer: 60,
+      accepted: 1,
+      rejected: 0,
+      pending: 1,
+    },
+  ]);
+  expect(computeTeams([], 100)).toEqual([]);
 });

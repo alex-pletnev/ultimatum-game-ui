@@ -1,7 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from './client';
-import { fetchSessionStats } from './stats-queries';
-import { computeLeaderboard } from '../routes/Stats.aggregations';
 import { useAccessToken } from './auth-storage';
 import type {
   CreateSessionRequest,
@@ -89,9 +87,6 @@ export function useSessionDetails(id: string | undefined) {
     queryFn: () =>
       apiFetch<SessionWithTeamsAndMembersResponse>(
         `/session/${encodeURIComponent(id ?? '')}/with-teams-and-members`,
-        // withAuth: false, чтобы stale-токен в localStorage не давал 403
-        // (endpoint публичный — см. BACKEND-FIX-public-stats-endpoint.md).
-        { withAuth: false },
       ),
     enabled: id !== undefined && id.length > 0,
     staleTime: 5_000,
@@ -104,35 +99,7 @@ export function useSessionScore(id: string | undefined) {
   const token = useAccessToken();
   return useQuery<SessionScoreDto>({
     queryKey: sessionKeys.score(id ?? ''),
-    queryFn: async () => {
-      const [session, rows, rounds] = await Promise.all([
-        apiFetch<SessionWithTeamsAndMembersResponse>(
-          `/session/${encodeURIComponent(id ?? '')}/with-teams-and-members`,
-          { withAuth: false },
-        ),
-        fetchSessionStats(id ?? ''),
-        apiFetch<RoundResponse[]>(`/session/${encodeURIComponent(id ?? '')}/rounds`),
-      ]);
-      const scores = new Map(
-        computeLeaderboard(rows, session.config.roundSum).map((p) => [p.userId, p.totalScore]),
-      );
-      return {
-        roundSum: session.config.roundSum,
-        roundsCompleted: rounds.filter(
-          (r) => r.roundPhase === 'FINISHED' || r.roundPhase === 'ALL_DECISIONS_RECEIVED',
-        ).length,
-        players: session.members.map((p) => ({
-          userId: p.id,
-          nickname: p.nickname,
-          score: scores.get(p.id) ?? 0,
-        })),
-        teams: session.teams.map((t) => ({
-          teamId: t.id,
-          name: t.name,
-          score: t.members.reduce((sum, p) => sum + (scores.get(p.id) ?? 0), 0),
-        })),
-      };
-    },
+    queryFn: () => apiFetch<SessionScoreDto>(`/statistics/${encodeURIComponent(id ?? '')}/score`),
     enabled: token !== null && Boolean(id),
     staleTime: 5_000,
     refetchInterval: 10_000,
@@ -183,6 +150,28 @@ export function useRematch() {
       apiFetch<SessionWithTeamsAndMembersResponse>(`/session/${encodeURIComponent(id)}/rematch`, {
         method: 'POST',
       }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: sessionKeys.all });
+    },
+  });
+}
+
+export function useSetAutopilot() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      sessionId,
+      playerId,
+      enabled,
+    }: {
+      sessionId: string;
+      playerId: string;
+      enabled: boolean;
+    }) =>
+      apiFetch<SessionWithTeamsAndMembersResponse>(
+        `/session/${sessionId}/autopilot/${playerId}?enabled=${enabled}`,
+        { method: 'POST' },
+      ),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: sessionKeys.all });
     },

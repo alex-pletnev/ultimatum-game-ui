@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useParams, useNavigate } from 'react-router';
+import { NumberStepper } from '../components/NumberStepper';
+import { AutopilotPanel } from '../components/AutopilotPanel';
 import { AddNpcPanel } from '../components/AddNpcPanel';
 import { Parchment } from '../components/Parchment';
 import { SessionInvite } from '../components/SessionInvite';
@@ -92,6 +94,16 @@ export function OfferPhasePanel({
           onChange={(e) => setAmount(Number(e.target.value))}
         />
       </label>
+      <fieldset disabled={disabled}>
+        <NumberStepper
+          label="Точная сумма"
+          value={amount}
+          onChange={setAmount}
+          min={0}
+          max={roundSum}
+          hint="Введите число или меняйте сумму на одну монету."
+        />
+      </fieldset>
       <div className="flex flex-wrap gap-2">
         {[0.25, 0.5, 0.75].map((share) => (
           <button
@@ -307,7 +319,7 @@ function readiness(session: SessionWithTeamsAndMembersResponse): string | null {
   if (session.config.sessionType === 'TEAM_BATTLE') {
     const largest = Math.max(...session.teams.map((t) => t.members.length), 0);
     if (largest > session.members.length / 2)
-      return 'Распределите игроков по командам поровну, чтобы каждый получил предложение соперника.';
+      return 'В одной команде не должно быть больше половины игроков. Распределите участников между командами.';
   }
   return null;
 }
@@ -444,6 +456,18 @@ export function Session() {
             )}
             {session.state === 'RUNNING' && (
               <>
+                {isAdmin && <AutopilotPanel session={session} />}
+                {session.autopilotPlayerIds?.includes(user.id) && (
+                  <p className="notice" role="status">
+                    За вас включён автопилот: предлагает половину и принимает от половины суммы.
+                    Попросите ведущего выключить его, чтобы снова ходить самостоятельно.
+                  </p>
+                )}
+                {session.config.anonymous && (
+                  <p className="text-sm text-muted">
+                    Анонимная игра: предложения и результаты показаны под псевдонимами.
+                  </p>
+                )}
                 {current.isError ? (
                   <p role="alert">
                     Не удалось загрузить раунд.{' '}
@@ -545,7 +569,7 @@ export function Session() {
                           key={round.id}
                           sessionId={session.id}
                           score={score.data}
-                          currentUserId={user.id}
+                          currentUserId={session.myPlayerId ?? user.id}
                           isAdmin={
                             isAdmin &&
                             (!session.config.autoAdvanceRounds ||
@@ -584,7 +608,7 @@ export function Session() {
                   <RoundResultPanel
                     sessionId={session.id}
                     score={score.data}
-                    currentUserId={user.id}
+                    currentUserId={session.myPlayerId ?? user.id}
                     isAdmin={isAdmin}
                     isSessionRunning={false}
                     isLastRound

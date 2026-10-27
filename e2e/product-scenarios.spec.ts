@@ -59,7 +59,7 @@ test('mobile guide is navigable and solo registration keeps the destination', as
   await page.goto('/guide');
   await page.getByRole('button', { name: 'Вопросы', exact: true }).click();
   await page.getByText('Где мои прошлые игры?', { exact: true }).click();
-  await expect(page.getByText(/История привязана к временному профилю/)).toBeVisible();
+  await expect(page.getByText(/История привязана к вашему профилю/)).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.goto('/play');
   await page.getByLabel('Имя', { exact: true }).fill(uniqueNickname('entry'));

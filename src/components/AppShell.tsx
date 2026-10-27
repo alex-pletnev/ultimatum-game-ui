@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router';
+import { RecoveryCode } from './RecoveryCode';
 import { useAccessToken } from '../api/auth-storage';
 import { useCurrentUser, useLogout } from '../api/auth-queries';
 
@@ -78,12 +79,13 @@ export function AppShell({ children }: { children: ReactNode }) {
           )}
         </div>
       </header>
+      {token && <RecoveryCode key={user?.id ?? 'profile'} />}
       {confirmLogout && token && (
         <section className="page-container py-4" aria-label="Подтверждение выхода">
           <div className="notice flex flex-col gap-3">
             <p>
-              Выйти из временного профиля? Вернуться к нему после выхода не получится. Если игра ещё
-              идёт, лучше остаться.
+              Перед выходом сохраните код восстановления в разделе «Код входа». С ним вы сможете
+              вернуться в свои игры. Простое обновление страницы выхода не требует.
             </p>
             <div className="flex flex-wrap gap-3">
               <button className="button button-secondary" onClick={() => setConfirmLogout(false)}>

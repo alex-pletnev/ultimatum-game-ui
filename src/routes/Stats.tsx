@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
+import { TeamStats } from './TeamStats';
 import { StatsProgress } from './StatsProgress';
 import { apiFetchText } from '../api/client';
 import {
@@ -369,8 +370,14 @@ function RawTable({ rows }: { rows: StatsRow[] }) {
             {filtered.map((r) => (
               <tr key={r.offerId} className="border-t border-brass-500/15">
                 <td className="px-3 py-2">{r.roundNumber}</td>
-                <td className="px-3 py-2">{r.proposerNickname}</td>
-                <td className="px-3 py-2">{r.responderNickname}</td>
+                <td className="px-3 py-2">
+                  {r.proposerNickname}
+                  {r.offerAutomatic ? ' · авто' : ''}
+                </td>
+                <td className="px-3 py-2">
+                  {r.responderNickname}
+                  {r.decisionAutomatic ? ' · авто' : ''}
+                </td>
                 <td className="px-3 py-2 text-right font-display">{r.amount}</td>
                 <td className="px-3 py-2 text-center">
                   {r.accepted === true ? (
@@ -523,14 +530,16 @@ export function Stats() {
 
   const [filterPlayer, setFilterPlayer] = useState('');
   const [filterRound, setFilterRound] = useState('');
+  const [humanOnly, setHumanOnly] = useState(false);
   const selectedRows = useMemo(
     () =>
       (rows ?? []).filter(
         (r) =>
           (!filterPlayer || r.proposerId === filterPlayer || r.responderId === filterPlayer) &&
-          (!filterRound || r.roundNumber === Number(filterRound)),
+          (!filterRound || r.roundNumber === Number(filterRound)) &&
+          (!humanOnly || (!r.offerAutomatic && !r.decisionAutomatic)),
       ),
-    [rows, filterPlayer, filterRound],
+    [rows, filterPlayer, filterRound, humanOnly],
   );
   const roundSum = session?.config.roundSum ?? 100;
 
@@ -635,9 +644,21 @@ export function Stats() {
             <SummaryCards s={summary} roundSum={roundSum} />
           </Parchment>
 
+          {session?.config.sessionType === 'TEAM_BATTLE' && (
+            <TeamStats rows={rows ?? []} roundSum={roundSum} />
+          )}
+          {rows?.some((r) => r.offerAutomatic || r.decisionAutomatic) && (
+            <p className="notice mt-6">
+              В игре есть автоматические ходы ботов или автопилота. Они отмечены в сделках и CSV; в
+              подробном анализе можно оставить только полностью человеческие сделки.
+            </p>
+          )}
           <Parchment className="mt-6">
             <SectionTitle>Рейтинг игроков</SectionTitle>
-            <Leaderboard players={leaderboard} currentUserId={user?.id ?? ''} />
+            <Leaderboard
+              players={leaderboard}
+              currentUserId={session?.myPlayerId ?? user?.id ?? ''}
+            />
           </Parchment>
 
           <StatsProgress rows={rows ?? []} roundSum={roundSum} players={leaderboard} />
@@ -683,16 +704,25 @@ export function Stats() {
                 </select>
               </label>
             </div>
+            <label className="choice-card mb-4">
+              <input
+                type="checkbox"
+                checked={humanOnly}
+                onChange={(e) => setHumanOnly(e.target.checked)}
+              />
+              Только сделки без автоматических ходов
+            </label>
             <p role="status" className="text-sm">
               Выбрано сделок: {selectedRows.length}. Фильтры применяются к анализу ниже; основной
               рейтинг и CSV охватывают всю партию.
             </p>
-            {(filterPlayer || filterRound) && (
+            {(filterPlayer || filterRound || humanOnly) && (
               <button
                 className="text-link mt-3"
                 onClick={() => {
                   setFilterPlayer('');
                   setFilterRound('');
+                  setHumanOnly(false);
                 }}
               >
                 Сбросить фильтры

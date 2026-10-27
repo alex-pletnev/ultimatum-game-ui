@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { StompContext } from './stomp-context';
-import { createStompClient, type StompError } from './stomp-client';
-import { authStorage, useAccessToken } from '../auth-storage';
+import { createStompClient } from './stomp-client';
+import { useAccessToken } from '../auth-storage';
 
 /*
  * Provider для STOMP-клиента. Соединение поднимается синхронно с наличием
@@ -17,16 +17,11 @@ export function StompProvider({ children }: { children: ReactNode }) {
   const client = useMemo(() => {
     if (token === null) return null;
     return createStompClient(token, {
-      onError: (err: StompError) => {
+      onError: () => {
         setError({
           message: 'Сервер не принял действие. Обновите игру и попробуйте снова.',
           timestamp: Date.now(),
         });
-        // Backend отклонил CONNECT (обычно expired JWT). Очищаем storage —
-        // useMemo пересоздаст client'а как null, reconnect-loop прекратится.
-        if (err.status === 401 || err.status === 403) {
-          authStorage.clear();
-        }
       },
       onConnect: () => {
         setConnected(true);

@@ -6,49 +6,48 @@
 
 ## Открытые задачи
 
-| ID | Название | Статус | Приоритет | Обновлено | Файл |
-|----|----------|--------|-----------|-----------|------|
-| T-014 | Lobby после POST /session — Playwright race | pending | low | 2026-07-16 | [T-014-lobby-refetch-race-debug.md](T-014-lobby-refetch-race-debug.md) |
-| T-023 | Prod deploy на GitHub Pages | in_progress | high | 2026-07-17 | [T-023-gh-pages-prod-deploy.md](T-023-gh-pages-prod-deploy.md) |
-
+| ID    | Название                                                       | Статус      | Приоритет | Обновлено  | Файл                                                                   |
+| ----- | -------------------------------------------------------------- | ----------- | --------- | ---------- | ---------------------------------------------------------------------- |
+| T-028 | Надёжная групповая игра, восстановление, анонимность и команды | done        | high      | 2026-10-27 | [T-028](T-028-group-play-reliability.md)                               |
+| T-014 | Lobby после POST /session — Playwright race                    | pending     | low       | 2026-07-16 | [T-014-lobby-refetch-race-debug.md](T-014-lobby-refetch-race-debug.md) |
+| T-023 | Prod deploy на GitHub Pages                                    | in_progress | high      | 2026-07-17 | [T-023-gh-pages-prod-deploy.md](T-023-gh-pages-prod-deploy.md)         |
 
 ## Закрытые задачи
 
-| ID | Название | Статус | Закрыто | Файл |
-|----|----------|--------|---------|------|
-| T-024 | Мобильная адаптивность — 0 horizontal scroll на iPhone | done | 2026-07-17 | [T-024-mobile-adaptive-ui.md](T-024-mobile-adaptive-ui.md) |
-| T-013 | e2e — независимость от БД + verify current-round fix | done | 2026-07-16 | [T-013-verify-current-round-fix.md](T-013-verify-current-round-fix.md) |
-| T-015 | Offer flow — форма отправки оффера в фазе WAIT_OFFERS | done | 2026-07-16 | [T-015-offer-form.md](T-015-offer-form.md) |
-| T-016 | Decision flow — accept/reject в фазе OFFERS_SENT | done | 2026-07-16 | [T-016-decision-flow.md](T-016-decision-flow.md) |
-| T-017 | Round finalization — счёт + ADMIN next-round | done | 2026-07-16 | [T-017-round-finalization.md](T-017-round-finalization.md) |
-| T-018 | Full gameplay e2e — 3 контекста через полный раунд | done | 2026-07-16 | [T-018-full-gameplay-e2e.md](T-018-full-gameplay-e2e.md) |
-| T-019 | Round abort + мелкая полировка Session-панели | done | 2026-07-16 | [T-019-round-abort-and-polish.md](T-019-round-abort-and-polish.md) |
-| T-020 | Страница статистики — сырые + агрегированные + графики | done | 2026-07-16 | [T-020-statistics-page.md](T-020-statistics-page.md) |
-| T-021 | NPC — CRUD + attach в сессию + autoAdvanceRounds | done | 2026-07-16 | [T-021-npc-frontend.md](T-021-npc-frontend.md) |
-| T-022 | Анимации — ансамбль (solemn scenes + playful ambient) | done | 2026-07-16 | [T-022-animations-ensemble.md](T-022-animations-ensemble.md) |
-| T-001 | Изучить frontend-integration/, заполнить API-контракт | done | 2026-07-15 | [T-001-fetch-and-document-api.md](T-001-fetch-and-document-api.md) |
-| T-002 | Vite+React+TS scaffolding, Tailwind, tooling | done | 2026-07-15 | [T-002-scaffold-vite-react-tailwind.md](T-002-scaffold-vite-react-tailwind.md) |
-| T-003 | Design tokens: фэнтези-настолка + Claude-brand | done | 2026-07-15 | [T-003-design-tokens-claude-brand.md](T-003-design-tokens-claude-brand.md) |
-| T-004 | Backend integration foundation — REST + STOMP + react-query | done | 2026-07-15 | [T-004-backend-integration-foundation.md](T-004-backend-integration-foundation.md) |
-| T-005 | Экран регистрации — «Присесть за стол» | done | 2026-07-15 | [T-005-registration-screen.md](T-005-registration-screen.md) |
-| T-006 | Playwright — e2e-фундамент и первые тесты happy-path | done | 2026-07-15 | [T-006-playwright-e2e-setup.md](T-006-playwright-e2e-setup.md) |
-| T-007 | Лобби — список открытых партий как афиши | done | 2026-07-15 | [T-007-lobby-session-list.md](T-007-lobby-session-list.md) |
-| T-008 | Экран учреждения партии (ADMIN → POST /session) | done | 2026-07-15 | [T-008-create-session-screen.md](T-008-create-session-screen.md) |
-| T-009 | Join сессии + заглушка экрана игры | done | 2026-07-15 | [T-009-join-session-and-placeholder-screen.md](T-009-join-session-and-placeholder-screen.md) |
-| T-010 | WS live-sync — состав партии обновляется реалтайм | done | 2026-07-15 | [T-010-session-live-sync.md](T-010-session-live-sync.md) |
-| T-011 | pnpm snap — ad-hoc screenshot скрипт | done | 2026-07-15 | [T-011-pnpm-snap-script.md](T-011-pnpm-snap-script.md) |
-| T-012 | ADMIN стартует партию + отображение фазы раунда | done | 2026-07-15 | [T-012-admin-start-round.md](T-012-admin-start-round.md) |
-| T-025 | Простой путь от первого визита до завершённой игры | done | 2026-10-23 | [T-025](T-025-simple-game-experience.md) |
-| T-026 | Игра как продукт — соло, сценарии, руководство и аналитика | done | 2026-10-23 | [T-026](T-026-product-expansion.md) |
+| ID    | Название                                                    | Статус | Закрыто    | Файл                                                                                         |
+| ----- | ----------------------------------------------------------- | ------ | ---------- | -------------------------------------------------------------------------------------------- |
+| T-024 | Мобильная адаптивность — 0 horizontal scroll на iPhone      | done   | 2026-07-17 | [T-024-mobile-adaptive-ui.md](T-024-mobile-adaptive-ui.md)                                   |
+| T-013 | e2e — независимость от БД + verify current-round fix        | done   | 2026-07-16 | [T-013-verify-current-round-fix.md](T-013-verify-current-round-fix.md)                       |
+| T-015 | Offer flow — форма отправки оффера в фазе WAIT_OFFERS       | done   | 2026-07-16 | [T-015-offer-form.md](T-015-offer-form.md)                                                   |
+| T-016 | Decision flow — accept/reject в фазе OFFERS_SENT            | done   | 2026-07-16 | [T-016-decision-flow.md](T-016-decision-flow.md)                                             |
+| T-017 | Round finalization — счёт + ADMIN next-round                | done   | 2026-07-16 | [T-017-round-finalization.md](T-017-round-finalization.md)                                   |
+| T-018 | Full gameplay e2e — 3 контекста через полный раунд          | done   | 2026-07-16 | [T-018-full-gameplay-e2e.md](T-018-full-gameplay-e2e.md)                                     |
+| T-019 | Round abort + мелкая полировка Session-панели               | done   | 2026-07-16 | [T-019-round-abort-and-polish.md](T-019-round-abort-and-polish.md)                           |
+| T-020 | Страница статистики — сырые + агрегированные + графики      | done   | 2026-07-16 | [T-020-statistics-page.md](T-020-statistics-page.md)                                         |
+| T-021 | NPC — CRUD + attach в сессию + autoAdvanceRounds            | done   | 2026-07-16 | [T-021-npc-frontend.md](T-021-npc-frontend.md)                                               |
+| T-022 | Анимации — ансамбль (solemn scenes + playful ambient)       | done   | 2026-07-16 | [T-022-animations-ensemble.md](T-022-animations-ensemble.md)                                 |
+| T-001 | Изучить frontend-integration/, заполнить API-контракт       | done   | 2026-07-15 | [T-001-fetch-and-document-api.md](T-001-fetch-and-document-api.md)                           |
+| T-002 | Vite+React+TS scaffolding, Tailwind, tooling                | done   | 2026-07-15 | [T-002-scaffold-vite-react-tailwind.md](T-002-scaffold-vite-react-tailwind.md)               |
+| T-003 | Design tokens: фэнтези-настолка + Claude-brand              | done   | 2026-07-15 | [T-003-design-tokens-claude-brand.md](T-003-design-tokens-claude-brand.md)                   |
+| T-004 | Backend integration foundation — REST + STOMP + react-query | done   | 2026-07-15 | [T-004-backend-integration-foundation.md](T-004-backend-integration-foundation.md)           |
+| T-005 | Экран регистрации — «Присесть за стол»                      | done   | 2026-07-15 | [T-005-registration-screen.md](T-005-registration-screen.md)                                 |
+| T-006 | Playwright — e2e-фундамент и первые тесты happy-path        | done   | 2026-07-15 | [T-006-playwright-e2e-setup.md](T-006-playwright-e2e-setup.md)                               |
+| T-007 | Лобби — список открытых партий как афиши                    | done   | 2026-07-15 | [T-007-lobby-session-list.md](T-007-lobby-session-list.md)                                   |
+| T-008 | Экран учреждения партии (ADMIN → POST /session)             | done   | 2026-07-15 | [T-008-create-session-screen.md](T-008-create-session-screen.md)                             |
+| T-009 | Join сессии + заглушка экрана игры                          | done   | 2026-07-15 | [T-009-join-session-and-placeholder-screen.md](T-009-join-session-and-placeholder-screen.md) |
+| T-010 | WS live-sync — состав партии обновляется реалтайм           | done   | 2026-07-15 | [T-010-session-live-sync.md](T-010-session-live-sync.md)                                     |
+| T-011 | pnpm snap — ad-hoc screenshot скрипт                        | done   | 2026-07-15 | [T-011-pnpm-snap-script.md](T-011-pnpm-snap-script.md)                                       |
+| T-012 | ADMIN стартует партию + отображение фазы раунда             | done   | 2026-07-15 | [T-012-admin-start-round.md](T-012-admin-start-round.md)                                     |
+| T-025 | Простой путь от первого визита до завершённой игры          | done   | 2026-10-23 | [T-025](T-025-simple-game-experience.md)                                                     |
+| T-026 | Игра как продукт — соло, сценарии, руководство и аналитика  | done   | 2026-10-23 | [T-026](T-026-product-expansion.md)                                                          |
 
 | T-027 | QR-приглашение, случайные боты и оформление настольной игры | done | 2026-10-24 | [T-027](T-027-tabletop-lobby.md) |
 
 ## Закрытые consolidation-циклы
 
-| Дата | После задачи | Задач в окне | Заведено meta-задач |
-|------|--------------|--------------|--------------------|
-| 2026-07-15 | T-010 | 10 | T-011 (snap-скрипт) |
-
+| Дата       | После задачи | Задач в окне | Заведено meta-задач |
+| ---------- | ------------ | ------------ | ------------------- |
+| 2026-07-15 | T-010        | 10           | T-011 (snap-скрипт) |
 
 ## Легенда статусов
 

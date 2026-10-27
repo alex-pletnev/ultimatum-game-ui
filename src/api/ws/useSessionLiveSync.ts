@@ -33,7 +33,7 @@ export function useSessionLiveSync(id: string | undefined): { connected: boolean
   const onSessionStatus = useCallback(
     (payload: SessionWithTeamsAndMembersResponse) => {
       if (id === undefined) return;
-      qc.setQueryData(sessionKeys.details(id), payload);
+      void qc.invalidateQueries({ queryKey: sessionKeys.details(id) });
       // При переходе в RUNNING — invalidate currentRound (до старта GET возвращал 404;
       // react-query cache 404 до пометки stale). Гарантирует свежий fetch раунда.
       if (payload.state === 'RUNNING') {

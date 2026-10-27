@@ -13,6 +13,8 @@ export function CreateSession() {
   const { data: user, isError, refetch } = useCurrentUser();
   const [displayName, setDisplayName] = useState('');
   const [sessionType, setSessionType] = useState<SessionType>('FREE_FOR_ALL');
+  const [numTeams, setNumTeams] = useState(2);
+  const [anonymous, setAnonymous] = useState(true);
   const [numRounds, setNumRounds] = useState(3);
   const [numPlayers, setNumPlayers] = useState(4);
   const [roundSum, setRoundSum] = useState(100);
@@ -49,8 +51,15 @@ export function CreateSession() {
       field.current?.focus();
       return;
     }
-    if (sessionType === 'TEAM_BATTLE' && numPlayers % 2 !== 0) {
-      setLocalError('Для двух команд выберите чётное число игроков.');
+    if (
+      sessionType === 'TEAM_BATTLE' &&
+      (numPlayers < numTeams || (numTeams === 2 && numPlayers % 2 !== 0))
+    ) {
+      setLocalError(
+        numPlayers < numTeams
+          ? 'Игроков должно быть не меньше, чем команд.'
+          : 'Для двух команд выберите чётное число игроков.',
+      );
       return;
     }
     setLocalError(null);
@@ -61,7 +70,8 @@ export function CreateSession() {
         config: {
           sessionType,
           numRounds,
-          numTeams: sessionType === 'TEAM_BATTLE' ? 2 : 0,
+          numTeams: sessionType === 'TEAM_BATTLE' ? numTeams : 0,
+          anonymous,
           numPlayers,
           roundSum,
           timeoutMoveSec: 60,
@@ -168,9 +178,23 @@ export function CreateSession() {
             {sessionType === 'DICTATOR'
               ? 'диктатор · без отказа'
               : sessionType === 'TEAM_BATTLE'
-                ? 'две команды'
+                ? `команд: ${numTeams}`
                 : 'каждый за себя'}
           </div>
+          <label className="choice-card">
+            <input
+              type="checkbox"
+              checked={anonymous}
+              onChange={(e) => setAnonymous(e.target.checked)}
+            />
+            <span>
+              <strong>Анонимные предложения и ответы</strong>
+              <span className="mt-1 block text-sm">
+                В сделках, результатах и CSV используются псевдонимы. Имена в списке участников
+                остаются для организации игры.
+              </span>
+            </span>
+          </label>
           <details>
             <summary>Дополнительные настройки</summary>
             <div className="mt-4 flex flex-col gap-6">
@@ -191,7 +215,7 @@ export function CreateSession() {
                     {
                       value: 'TEAM_BATTLE',
                       label: 'Команды',
-                      hint: 'Две команды. Игроки договариваются с соперниками.',
+                      hint: 'От двух до четырёх команд. Предложения приходят из других команд.',
                     },
                   ] as const
                 ).map((choice) => (
@@ -217,9 +241,14 @@ export function CreateSession() {
                 ))}
               </fieldset>
               {sessionType === 'TEAM_BATTLE' && (
-                <p className="text-sm">
-                  Две команды: перед стартом в каждой должно быть поровну игроков.
-                </p>
+                <NumberStepper
+                  label="Команд"
+                  value={numTeams}
+                  onChange={setNumTeams}
+                  min={2}
+                  max={4}
+                  hint="В одной команде не должно быть больше половины всех участников. Для двух команд нужен равный состав."
+                />
               )}
               <NumberStepper
                 label="Раундов"

@@ -13,6 +13,7 @@ import { useSyncExternalStore } from 'react';
 
 const ACCESS_KEY = 'ug:accessToken';
 const REFRESH_KEY = 'ug:refreshToken';
+const RECOVERY_KEY = 'ug:recoveryCode';
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
@@ -39,7 +40,14 @@ export const authStorage = {
     if (refreshToken !== null) localStorage.setItem(REFRESH_KEY, refreshToken);
     notify();
   },
+  getRecovery(): string | null {
+    return localStorage.getItem(RECOVERY_KEY);
+  },
+  setRecovery(code: string): void {
+    localStorage.setItem(RECOVERY_KEY, code);
+  },
   clear(): void {
+    localStorage.removeItem(RECOVERY_KEY);
     localStorage.removeItem(ACCESS_KEY);
     localStorage.removeItem(REFRESH_KEY);
     notify();

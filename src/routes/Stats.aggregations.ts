@@ -188,3 +188,54 @@ export function computeCumulativeScores(
     return { round, ...totals };
   });
 }
+
+export function computeTeams(rows: StatsRow[], roundSum: number) {
+  const teams = new Map<
+    string,
+    {
+      id: string;
+      name: string;
+      score: number;
+      offers: number;
+      avgOffer: number;
+      accepted: number;
+      rejected: number;
+      pending: number;
+    }
+  >();
+  const ensure = (id: string | undefined, name: string | undefined) => {
+    if (!id) return undefined;
+    if (!teams.has(id))
+      teams.set(id, {
+        id,
+        name: name || 'Команда',
+        score: 0,
+        offers: 0,
+        avgOffer: 0,
+        accepted: 0,
+        rejected: 0,
+        pending: 0,
+      });
+    return teams.get(id)!;
+  };
+  for (const row of rows) {
+    const proposer = ensure(row.proposerTeamId, row.proposerTeamName);
+    const responder = ensure(row.responderTeamId, row.responderTeamName);
+    if (proposer) {
+      proposer.offers++;
+      proposer.avgOffer += row.amount;
+    }
+    if (responder) {
+      if (row.accepted === true) responder.accepted++;
+      else if (row.accepted === false) responder.rejected++;
+      else responder.pending++;
+    }
+    if (row.accepted === true) {
+      if (proposer) proposer.score += roundSum - row.amount;
+      if (responder) responder.score += row.amount;
+    }
+  }
+  return [...teams.values()]
+    .map((team) => ({ ...team, avgOffer: team.offers ? team.avgOffer / team.offers : 0 }))
+    .sort((a, b) => b.score - a.score);
+}

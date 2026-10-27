@@ -22,6 +22,7 @@ function renderRegister(entry = '/register') {
       <MemoryRouter initialEntries={[entry]}>
         <Routes>
           <Route path="/register" element={<Register />} />
+          <Route path="/history" element={<div>history</div>} />
           <Route path="/lobby" element={<div>games</div>} />
           <Route path="/lobby/new" element={<div>create</div>} />
           <Route path="/session/:id" element={<div>invitation</div>} />
@@ -113,6 +114,25 @@ describe('Register', () => {
     await user.type(screen.getByLabelText(/Имя/i), 'Guest');
     await user.click(screen.getByRole('button', { name: /Продолжить/i }));
     expect(await screen.findByText('games')).toBeInTheDocument();
+  });
+
+  it.each([
+    ['/register?next=%2Fsession%2Finvited', 'invitation'],
+    ['/register', 'history'],
+  ])('restores a profile from %s to %s', async (entry, destination) => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      jsonResponse(200, { accessToken: 'a', refreshToken: 'r', expiresIn: 900 }),
+    );
+    const user = userEvent.setup();
+    renderRegister(entry);
+    await user.click(screen.getByRole('button', { name: 'Вернуться по коду' }));
+    await user.type(screen.getByLabelText('Код восстановления'), 'secret-recovery-code');
+    await user.click(screen.getByRole('button', { name: 'Восстановить вход' }));
+    expect(await screen.findByText(destination)).toBeInTheDocument();
+    expect(vi.mocked(fetch).mock.calls[0]![0]).toContain('/auth/quick-login');
+    expect(vi.mocked(fetch).mock.calls[0]![1]!.body).toBe(
+      JSON.stringify({ recoveryCode: 'secret-recovery-code' }),
+    );
   });
 
   it('shows backend 400 message', async () => {

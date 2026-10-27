@@ -1,4 +1,6 @@
 import { Client, type IMessage } from '@stomp/stompjs';
+import { authStorage } from '../auth-storage';
+import { refreshAccessToken } from '../client';
 import { config } from '../config';
 import type { ApiErrorResponse } from '../types';
 
@@ -52,5 +54,24 @@ export function createStompClient(
       });
     },
   });
+  client.beforeConnect = async () => {
+    let token = authStorage.getAccess();
+    if (!token) {
+      void client.deactivate();
+      return;
+    }
+    try {
+      const payload = JSON.parse(
+        atob(token.split('.')[1]!.replace(/-/g, '+').replace(/_/g, '/')),
+      ) as { exp?: number };
+      if (payload.exp && payload.exp * 1000 < Date.now() + 60_000) {
+        token = await refreshAccessToken();
+      }
+    } catch {
+      // A temporary refresh failure keeps credentials; reconnect will retry.
+    }
+    if (token) client.connectHeaders = { Authorization: `Bearer ${token}` };
+    else void client.deactivate();
+  };
   return client;
 }

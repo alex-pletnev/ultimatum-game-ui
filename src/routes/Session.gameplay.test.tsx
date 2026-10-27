@@ -64,6 +64,30 @@ describe('OfferPhasePanel', () => {
     });
   });
 
+  it('accepts a precise amount from the keyboard and one-coin buttons', () => {
+    const publish = vi.fn();
+    render(
+      <OfferPhasePanel
+        sessionId="s-1"
+        round={baseRound()}
+        roundSum={100}
+        playersCount={2}
+        liveConnected
+      />,
+      { wrapper: wrapWithClient(publish) },
+    );
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Точная сумма' }), {
+      target: { value: '37' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'увеличить Точная сумма' }));
+    expect(screen.getByRole('slider')).toHaveValue('38');
+    fireEvent.click(screen.getByRole('button', { name: 'Предложить 38 монет' }));
+    expect(publish).toHaveBeenCalledWith({
+      destination: '/app/session/s-1/offer.create',
+      body: '{"amount":38}',
+    });
+  });
+
   it('без SEND_OFFER показывает waiting-текст с progress', () => {
     render(
       <OfferPhasePanel

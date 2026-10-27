@@ -20,6 +20,12 @@ export type StatsRow = {
   /** null — оффер не получил решения (round abort). */
   accepted: boolean | null;
   timestamp: string;
+  proposerTeamId?: string;
+  proposerTeamName?: string;
+  responderTeamId?: string;
+  responderTeamName?: string;
+  offerAutomatic?: boolean;
+  decisionAutomatic?: boolean;
 };
 
 export const statsKeys = {
@@ -40,6 +46,12 @@ function toRow(raw: Record<string, string>): StatsRow {
     responderNickname: raw.responderNickname ?? '',
     accepted,
     timestamp: raw.timestamp ?? '',
+    proposerTeamId: raw.proposerTeamId ?? '',
+    proposerTeamName: raw.proposerTeamName ?? '',
+    responderTeamId: raw.responderTeamId ?? '',
+    responderTeamName: raw.responderTeamName ?? '',
+    offerAutomatic: raw.offerAutomatic === 'true',
+    decisionAutomatic: raw.decisionAutomatic === 'true',
   };
 }
 

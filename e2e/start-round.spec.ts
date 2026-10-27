@@ -60,7 +60,7 @@ test('an aborted automatic game can continue even when scores are unavailable', 
   const context = await openContextWithToken(browser, host.accessToken);
   try {
     const page = await context.newPage();
-    await page.route('**/statistics/*/csv', (route) =>
+    await page.route('**/statistics/*/score', (route) =>
       route.fulfill({ status: 503, body: 'Temporarily unavailable' }),
     );
     await page.goto(`/session/${game.id}`);

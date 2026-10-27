@@ -7,7 +7,7 @@
  *     (см. docs/05-api.md → «Формат ошибок»).
  *   - 401 → одна попытка refresh → retry исходного запроса. Refresh — race-safe:
  *     параллельные 401'ы делят один in-flight запрос к /auth/refresh.
- *   - 401 без refresh-токена ИЛИ refresh, вернувший ошибку — очищает storage,
+ *   - 401/403 от refresh означает окончание входа; временные сбои сохраняют storage,
  *     каскадные хуки увидят `getAccess() === null` и переведут пользователя на login.
  */
 
@@ -29,7 +29,7 @@ export class ApiError extends Error {
 
 let refreshInFlight: Promise<string | null> | null = null;
 
-async function refreshAccessToken(): Promise<string | null> {
+export async function refreshAccessToken(): Promise<string | null> {
   if (refreshInFlight !== null) return refreshInFlight;
 
   const refreshToken = authStorage.getRefresh();
@@ -43,17 +43,19 @@ async function refreshAccessToken(): Promise<string | null> {
         body: JSON.stringify({ refreshToken }),
       });
       if (!response.ok) {
-        authStorage.clear();
-        return null;
+        if (response.status === 401 || response.status === 403) {
+          if (authStorage.getRefresh() === refreshToken) authStorage.clear();
+          return null;
+        }
+        throw new ApiError(response.status, null, 'Не удалось обновить вход. Попробуйте ещё раз.');
       }
       const data = (await response.json()) as JwtAuthenticationResponse;
       // Rotation отключена в MVP — сервер возвращает refreshToken: null.
       // Сохраняем старый refresh, чтобы next-refresh снова работал.
+      // A delayed refresh must not restore a logged-out or replaced profile.
+      if (authStorage.getRefresh() !== refreshToken) return authStorage.getAccess();
       authStorage.setTokens(data.accessToken, data.refreshToken ?? refreshToken);
       return data.accessToken;
-    } catch {
-      authStorage.clear();
-      return null;
     } finally {
       refreshInFlight = null;
     }
@@ -72,10 +74,7 @@ type ApiFetchInit = Omit<RequestInit, 'body'> & {
   withAuth?: boolean;
 };
 
-function normalizeBody(
-  body: ApiFetchInit['body'],
-  headers: Headers,
-): BodyInit | null | undefined {
+function normalizeBody(body: ApiFetchInit['body'], headers: Headers): BodyInit | null | undefined {
   if (body === undefined || body === null) return body;
   if (
     typeof body === 'string' ||

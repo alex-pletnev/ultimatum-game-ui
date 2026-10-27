@@ -1,11 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from './client';
 import { authStorage, useAccessToken } from './auth-storage';
-import type {
-  CreateUserRequest,
-  JwtAuthenticationResponse,
-  UserResponse,
-} from './types';
+import type { CreateUserRequest, JwtAuthenticationResponse, UserResponse } from './types';
 
 export const authKeys = {
   user: ['auth', 'user'] as const,
@@ -29,8 +25,10 @@ export function useQuickRegister() {
       apiFetch<JwtAuthenticationResponse>('/auth/quick-register', {
         method: 'POST',
         body,
+        withAuth: false,
       }),
     onSuccess: (data) => {
+      if (data.recoveryCode) authStorage.setRecovery(data.recoveryCode);
       authStorage.setTokens(data.accessToken, data.refreshToken);
       void qc.invalidateQueries({ queryKey: authKeys.user });
     },
@@ -45,6 +43,23 @@ export function useLogout() {
     onSettled: () => {
       authStorage.clear();
       qc.clear();
+    },
+  });
+}
+
+export function useRecoverProfile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (recoveryCode: string) =>
+      apiFetch<JwtAuthenticationResponse>('/auth/quick-login', {
+        method: 'POST',
+        body: { recoveryCode },
+        withAuth: false,
+      }),
+    onSuccess: (data) => {
+      qc.clear();
+      if (data.recoveryCode) authStorage.setRecovery(data.recoveryCode);
+      authStorage.setTokens(data.accessToken, data.refreshToken);
     },
   });
 }

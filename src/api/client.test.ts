@@ -91,6 +91,20 @@ describe('apiFetch', () => {
     expect(authStorage.getRefresh()).toBeNull();
   });
 
+  it.each(['network', 'server'])(
+    'keeps credentials when refresh has a temporary %s failure',
+    async (failure) => {
+      authStorage.setTokens('old-access', 'refresh-1');
+      const fetchMock = vi.mocked(fetch);
+      fetchMock.mockResolvedValueOnce(jsonResponse(401, { message: 'expired' }));
+      if (failure === 'network') fetchMock.mockRejectedValueOnce(new TypeError('offline'));
+      else fetchMock.mockResolvedValueOnce(jsonResponse(503, { message: 'unavailable' }));
+      await expect(apiFetch('/user')).rejects.toThrow();
+      expect(authStorage.getAccess()).toBe('old-access');
+      expect(authStorage.getRefresh()).toBe('refresh-1');
+    },
+  );
+
   it('shares one refresh across concurrent 401s (race-safe)', async () => {
     authStorage.setTokens('old-access', 'refresh-1');
     const fetchMock = vi.mocked(fetch);
@@ -115,8 +129,8 @@ describe('apiFetch', () => {
     expect(resB).toEqual({ id: 'u-B' });
     // 2 первых + 1 refresh + 2 retry = 5 (refresh — один, не два).
     expect(fetchMock).toHaveBeenCalledTimes(5);
-    const refreshCalls = fetchMock.mock.calls.filter(([url]) =>
-      typeof url === 'string' && url.endsWith('/auth/refresh'),
+    const refreshCalls = fetchMock.mock.calls.filter(
+      ([url]) => typeof url === 'string' && url.endsWith('/auth/refresh'),
     );
     expect(refreshCalls).toHaveLength(1);
   });

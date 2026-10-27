@@ -157,6 +157,15 @@ describe('CreateSession', () => {
 
     await user.click(screen.getByText('Дополнительные настройки'));
     await user.click(screen.getByRole('radio', { name: /Команды/i }));
-    expect(screen.getByText(/Две команды: перед/)).toBeInTheDocument();
+    const teams = screen.getByRole('spinbutton', { name: 'Команд' });
+    await user.clear(teams);
+    await user.type(teams, '3');
+    await user.click(screen.getByRole('button', { name: /Создать игру/i }));
+    await screen.findByText('session-page');
+    const call = vi.mocked(fetch).mock.calls.find(([, init]) => init?.method === 'POST');
+    expect(JSON.parse(call![1]!.body as string).config).toMatchObject({
+      numTeams: 3,
+      anonymous: true,
+    });
   });
 });

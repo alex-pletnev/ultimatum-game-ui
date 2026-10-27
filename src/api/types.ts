@@ -41,6 +41,7 @@ export type JwtAuthenticationResponse = {
   accessToken: string;
   refreshToken: string | null;
   expiresIn: number;
+  recoveryCode?: string | null;
 };
 
 export type UserResponse = {
@@ -64,6 +65,7 @@ export type SessionConfigRequest = {
   roundSum: number;
   timeoutMoveSec: number;
   autoAdvanceRounds?: boolean;
+  anonymous?: boolean;
 };
 
 export type CreateSessionRequest = {
@@ -83,6 +85,7 @@ export type SessionConfigResponse = {
   roundSum: number;
   timeoutMoveSec: number;
   autoAdvanceRounds?: boolean;
+  anonymous?: boolean;
 };
 
 export type RoundPrewResponse = {
@@ -122,6 +125,8 @@ export type SessionWithTeamsAndMembersResponse = Omit<SessionResponse, 'teams' |
   teams: TeamResponse[];
   members: UserResponse[];
   observers: UserResponse[];
+  autopilotPlayerIds?: string[];
+  myPlayerId?: string | null;
 };
 
 /* ────────────────────  Round + Offer + Decision  ─────────────────────────── */
